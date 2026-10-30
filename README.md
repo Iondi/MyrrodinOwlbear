@@ -73,6 +73,20 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ---
 
+## Monsters from the 5E bestiary
+
+Right-click any character token → **Create Myr'rodin Sheet → Monster from the 5E bestiary**.
+
+- It guesses the creature from the token's name (or the token picture's name, so Owlbear's "Beast" token suggests a boar, wolf, bear…). Generic words work too: *undead*, *humanoid*, *dragon*, *bandit*.
+- **Roll hit points** rolls the creature's hit dice (a skeleton gets 2d8+4) instead of the average.
+- **Vary ability scores** nudges each score up or down by 1, so no two goblins are identical.
+- **Hide from players** is on by default for monsters.
+- 5E skills carry over as Myr'rodin tiers (Proficient or Expert). The Myr'rodin-only skills (Reflex, Endurance, Mana Burn…) use the plain ability modifier. Attacks, multiattack (as the combat helper), traits, resistances and senses all come across, and attack and damage numbers match the printed stat block.
+
+All 334 creatures in the 5E System Reference Document 5.1 are included. SRD 5.1 is © Wizards of the Coast and licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The data comes from the [5e-bits/5e-database](https://github.com/5e-bits/5e-database) project.
+
+---
+
 ## Backups
 
 Sheets live on the token. **If you delete the token or the scene, the sheet goes with it.** Use **Sheet → Export character** to copy a backup, and **Import character** (or **Load a character** on a new token) to bring it back. This is also how a character moves to a new scene or a new room.
@@ -106,6 +120,8 @@ party.html/js        the toolbar panel (party, quick dice, roll log)
 sheet.html/js        the character sheet
 js/rules.js          the Myr'rodin rules — edit this one for house rules
 js/gsheet.js         reads a Google Sheet into a character
+js/bestiary.js       turns 5E SRD monsters into Myr'rodin sheets
+data/bestiary.json   the 334 SRD creatures
 js/dice.js           the dice roller
 js/bridge.js         talks to Owlbear
 css/style.css        colours and layout (colours are at the top)

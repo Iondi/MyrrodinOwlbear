@@ -6,6 +6,7 @@ import {
 import { roll, d20, plus, isDiceExpression } from "./dice.js";
 import * as B from "./bridge.js";
 import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -816,6 +817,7 @@ function showCreate() {
       <div class="roll-row center">
         <button class="primary" id="new-blank">Start a blank sheet</button>
         <button id="new-import">Load a character</button>
+        <button id="new-monster">Monster from the 5E bestiary</button>
         <button id="new-google">Link a Google Sheet</button>
         <button id="new-example">Use the example (Lyrith)</button>
       </div>
@@ -830,6 +832,7 @@ function showCreate() {
   };
   document.getElementById("new-blank").onclick = () => begin(blankCharacter(token?.name || "New Adventurer"));
   document.getElementById("new-import").onclick = () => { state = null; showImport(true); };
+  document.getElementById("new-monster").onclick = () => showBestiary(begin);
   document.getElementById("new-google").onclick = () => {
     const el = overlay(`
       <h3>Link a Google Sheet</h3>
@@ -855,6 +858,69 @@ function showCreate() {
     });
   };
   document.getElementById("new-example").onclick = async () => begin(await (await fetch(B.asset("characters/lyrith-taewen.json"))).json());
+}
+
+async function showBestiary(begin) {
+  const el = overlay(`
+    <h3>Monster from the 5E bestiary</h3>
+    <input id="bst-q" placeholder="Search: skeleton, boar, goblin, undead, CR…" aria-label="Search monsters" />
+    <ul class="bst-list" id="bst-list"><li class="muted small">Loading the bestiary…</li></ul>
+    <div class="bst-opts">
+      <label class="chk"><input type="checkbox" id="bst-roll" checked /><span>Roll hit points</span></label>
+      <label class="chk"><input type="checkbox" id="bst-vary" checked /><span>Vary ability scores a little (±1)</span></label>
+      <label class="chk"><input type="checkbox" id="bst-hide" checked /><span>Hide from players</span></label>
+    </div>
+    <div class="roll-row"><button class="primary" id="bst-go" disabled>Create</button><button data-close>Cancel</button>
+      <span class="muted small bst-credit">Stats from the 5E SRD 5.1, CC BY 4.0</span></div>`);
+  el.querySelector(".dialog").classList.add("wide");
+  let list = [];
+  let picked = null;
+  try { list = await loadBestiary(); }
+  catch { el.querySelector("#bst-list").innerHTML = `<li class="warn-text small">Couldn't load the bestiary. Check that the data folder was uploaded to GitHub.</li>`; return; }
+
+  const q = el.querySelector("#bst-q");
+  const ul = el.querySelector("#bst-list");
+  const go = el.querySelector("#bst-go");
+  const draw = (results) => {
+    ul.innerHTML = results.length ? results.map((m) => `<li><button class="bst-row ${picked?.i === m.i ? "picked" : ""}" data-id="${esc(m.i)}">
+        <span class="bst-name">${esc(m.n)}</span>
+        <span class="bst-meta">CR ${crText(m.cr)} · ${esc(m.sz)} ${esc(m.ty)} · AC ${m.ac} · HP ${m.hp} (${esc(m.hd)})</span>
+      </button></li>`).join("") : `<li class="muted small">No match. Try a creature type like beast, undead or humanoid.</li>`;
+  };
+  const run = () => draw(searchBestiary(list, q.value, 40));
+
+  // Start with the token's name, falling back to its picture's name ("Beast").
+  const guesses = [token?.name, token?.imageName].filter(Boolean);
+  let first = guesses.find((g) => searchBestiary(list, g, 1).length) || "";
+  q.value = first;
+  run();
+  const top = searchBestiary(list, first, 1)[0];
+  if (top && first) { picked = top; go.disabled = false; run(); }
+  q.focus(); q.select();
+
+  q.addEventListener("input", run);
+  ul.addEventListener("click", (e) => {
+    const row = e.target.closest("[data-id]");
+    if (!row) return;
+    picked = list.find((m) => m.i === row.dataset.id);
+    go.disabled = !picked;
+    ul.querySelectorAll(".bst-row").forEach((b) => b.classList.toggle("picked", b.dataset.id === picked?.i));
+  });
+  ul.addEventListener("dblclick", (e) => { if (e.target.closest("[data-id]")) go.click(); });
+  go.addEventListener("click", async () => {
+    if (!picked) return;
+    // Use the token's own label if it has one, otherwise the creature's name.
+    const label = token?.name && token.name !== token.imageName ? token.name : "";
+    const c = toCharacter(picked, {
+      rollHp: el.querySelector("#bst-roll").checked,
+      vary: el.querySelector("#bst-vary").checked,
+      name: label,
+    });
+    c.gmOnly = el.querySelector("#bst-hide").checked;
+    el.remove();
+    await begin(c, true);
+    toast(`${esc(c.name)} is ready: ${c.hp.max} HP.`, "good");
+  });
 }
 
 async function start() {

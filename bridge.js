@@ -68,6 +68,7 @@ export async function getToken(itemId) {
   return {
     id: item.id,
     name: tokenLabel(item),
+    imageName: item.name || "",
     image: item.image?.url || null,
     createdUserId: item.createdUserId,
     sheet: item.metadata?.[KEY] || null,

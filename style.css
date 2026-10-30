@@ -342,3 +342,14 @@ button.stat:hover b { color: var(--gold); }
 .gs-link { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .gs-panel a { color: var(--gold); }
 .dialog input#gs-new-url { font-size: 14px; }
+
+/* Bestiary picker */
+.dialog.wide { width: min(720px, 100%); }
+.bst-list { list-style: none; margin: 0; padding: 4px; display: grid; gap: 4px; max-height: min(46vh, 380px); overflow-y: auto; background: var(--sunken); border: 1px solid var(--line); border-radius: 10px; }
+.bst-row { width: 100%; display: grid; gap: 2px; justify-items: start; text-align: left; white-space: normal; background: transparent; border-color: transparent; padding: 7px 10px; }
+.bst-row:hover { background: var(--raised); border-color: var(--line-strong); }
+.bst-row.picked { background: var(--ember-soft); border-color: var(--ember); }
+.bst-name { font-family: var(--display); font-size: 15px; }
+.bst-meta { font-size: 12px; color: var(--muted); font-weight: 500; }
+.bst-opts { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.bst-credit { margin-left: auto; }

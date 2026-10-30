@@ -1,0 +1,132 @@
+{
+  "system": "myrrodin",
+  "version": 1,
+  "name": "Lyrith Taewen",
+  "player": "",
+  "class": "Barbarian",
+  "race": "Ruby Thunder Dragon",
+  "lineage": "Albertine (Eastern Ruby Thunder)",
+  "background": "Farmer",
+  "level": 2,
+  "level2": 0,
+  "xp": 2000,
+  "profBonus": 2,
+  "abilities": {
+    "str": 18,
+    "dex": 16,
+    "con": 13,
+    "int": 11,
+    "wis": 17,
+    "cha": 15
+  },
+  "saves": {
+    "str": false,
+    "dex": false,
+    "con": false,
+    "int": false,
+    "wis": false,
+    "cha": false
+  },
+  "skills": {
+    "athletics": {
+      "tier": "prof"
+    },
+    "acrobatics": {
+      "tier": "prof"
+    },
+    "arcana": {
+      "tier": "deficient"
+    },
+    "medicine": {
+      "tier": "deficient"
+    }
+  },
+  "ac": 16,
+  "speed": "30",
+  "speedNotes": "Levitation",
+  "hp": {
+    "current": 31,
+    "max": 31,
+    "temp": 0
+  },
+  "initMisc": 0,
+  "willMisc": 0,
+  "mana": {
+    "current": 5,
+    "max": 5,
+    "regen": "1"
+  },
+  "psi": {
+    "current": 0,
+    "max": 0
+  },
+  "combat": [
+    "Rage"
+  ],
+  "features": [
+    "Darkvision",
+    "Unarmored Defense"
+  ],
+  "feats": [
+    "Tough"
+  ],
+  "attacks": [
+    {
+      "name": "(Cursed) Greatsword",
+      "range": "5 ft",
+      "ability": "str",
+      "damage": "2d6",
+      "damageType": "Force",
+      "proficient": true,
+      "equipped": true,
+      "graze": true,
+      "notes": ""
+    }
+  ],
+  "attackNotes": "Breath Weapon (Cold/Sonic): DC 14 Con save. Sonic Force breath weapon.\nGraze: if the weapon misses, the Strength modifier (4) still hits.",
+  "magic": {
+    "ability": "int",
+    "spells": []
+  },
+  "psionics": [
+    {
+      "name": "",
+      "type": "Force Addon (1 PSI)",
+      "castTime": "1 Action",
+      "range": "60 ft",
+      "cost": 1,
+      "damage": "1d10",
+      "duration": "Instantaneous",
+      "save": "",
+      "learned": true
+    },
+    {
+      "name": "",
+      "type": "",
+      "castTime": "1 Action",
+      "range": "Sight",
+      "cost": 1,
+      "damage": "",
+      "duration": "Instantaneous",
+      "save": "",
+      "learned": true
+    }
+  ],
+  "equipment": [],
+  "money": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 0,
+    "pp": 0
+  },
+  "languages": "Dwarvish, Undercommon",
+  "weaponProfs": "",
+  "armorProfs": "",
+  "blurb": "",
+  "goal": "",
+  "notes": "",
+  "gmOnly": false,
+  "ownerId": "",
+  "spellDCMisc": 0
+}
