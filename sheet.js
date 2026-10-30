@@ -821,8 +821,9 @@ function showCreate() {
       </div>
       ${B.inOBR ? `<button class="link" data-action="close">Cancel</button>` : ""}
     </div>`;
-  const begin = async (data) => {
+  const begin = async (data, keepName = false) => {
     state = normalize({ ...data, ownerId: self.role === "GM" ? "" : self.id });
+    if (!keepName && token?.name) state.name = token.name;
     canEdit = true;
     render();
     await saveNow();
@@ -845,7 +846,7 @@ function showCreate() {
         const base = normalize({ ...blankCharacter(token?.name || "New Adventurer"), googleSheet: { id, url, auto: true, lastSync: 0 } });
         const synced = await syncFromGoogle(base);
         el.remove();
-        await begin(synced);
+        await begin(synced, true);
         toast(`Linked ${esc(state.name)}.${state.googleSheet.missing?.length ? ` ${state.googleSheet.missing.length} field(s) not found; see the Sheet tab.` : ""}`, "good");
       } catch (err) {
         btn.disabled = false; btn.textContent = "Link & sync";
