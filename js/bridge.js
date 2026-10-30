@@ -1,0 +1,137 @@
+// Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
+// testing in a normal browser tab), it falls back to "preview mode" and
+// keeps everything in this browser only.
+import OBR from "../vendor/obr-sdk.js";
+
+export const NS = "com.emberbelle.myrrodin";
+export const KEY = `${NS}/sheet`;
+export const ROLL_CHANNEL = `${NS}/roll`;
+export const LOG_KEY = "myrrodin-roll-log";
+export const SHEET_MODAL = `${NS}/sheet-modal`;
+export const inOBR = OBR.isAvailable;
+export { OBR };
+
+// Full URL of a file in this extension (works on GitHub Pages sub-folders).
+export const asset = (path) => new URL(`../${path}`, import.meta.url).href;
+
+export function whenReady() {
+  if (!inOBR) return Promise.resolve();
+  return new Promise((resolve) => OBR.onReady(resolve));
+}
+
+// ---- Preview-mode storage --------------------------------------------
+const PREVIEW_KEY = "myrrodin-preview-items";
+const previewItems = () => {
+  try { return JSON.parse(localStorage.getItem(PREVIEW_KEY) || "{}"); } catch { return {}; }
+};
+const previewSave = (all) => {
+  try { localStorage.setItem(PREVIEW_KEY, JSON.stringify(all)); } catch { /* ignore */ }
+};
+
+// ---- Who am I -----------------------------------------------------------
+export async function me() {
+  if (!inOBR) return { id: "preview-gm", role: "GM", name: "You (preview)", connectionId: "local" };
+  const [id, role, name, connectionId] = await Promise.all([
+    OBR.player.getId(), OBR.player.getRole(), OBR.player.getName(), OBR.player.getConnectionId(),
+  ]);
+  return { id, role, name, connectionId };
+}
+
+export async function partyPlayers() {
+  if (!inOBR) return [];
+  return OBR.party.getPlayers();
+}
+
+// ---- Tokens & sheets --------------------------------------------------
+export async function getToken(itemId) {
+  if (!inOBR) {
+    const p = previewItems()[itemId];
+    return p ? { id: itemId, name: p.name, image: null, createdUserId: "preview-gm", sheet: p } : { id: itemId, name: "Preview token", sheet: null };
+  }
+  const [item] = await OBR.scene.items.getItems([itemId]);
+  if (!item) return null;
+  return {
+    id: item.id,
+    name: item.name,
+    image: item.image?.url || null,
+    createdUserId: item.createdUserId,
+    sheet: item.metadata?.[KEY] || null,
+  };
+}
+
+export async function saveSheet(itemId, sheet) {
+  if (!inOBR) {
+    const all = previewItems();
+    all[itemId] = sheet;
+    previewSave(all);
+    return;
+  }
+  await OBR.scene.items.updateItems([itemId], (items) => {
+    for (const item of items) item.metadata[KEY] = sheet;
+  });
+}
+
+export async function deleteSheet(itemId) {
+  if (!inOBR) {
+    const all = previewItems();
+    delete all[itemId];
+    previewSave(all);
+    return;
+  }
+  await OBR.scene.items.updateItems([itemId], (items) => {
+    for (const item of items) delete item.metadata[KEY];
+  });
+}
+
+export async function listSheets() {
+  if (!inOBR) {
+    return Object.entries(previewItems()).map(([id, sheet]) => ({ id, name: sheet.name, image: null, sheet }));
+  }
+  const items = await OBR.scene.items.getItems((item) => item.metadata?.[KEY] !== undefined);
+  return items.map((item) => ({ id: item.id, name: item.name, image: item.image?.url || null, sheet: item.metadata[KEY] }));
+}
+
+export function onSheetsChange(callback) {
+  if (!inOBR) {
+    const handler = (e) => { if (e.key === PREVIEW_KEY) callback(); };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }
+  return OBR.scene.items.onChange(() => callback());
+}
+
+export async function openSheet(itemId, extra = "") {
+  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}`);
+  if (!inOBR) { window.open(url, "_blank"); return; }
+  await OBR.modal.open({ id: SHEET_MODAL, url, width: 920, height: 780 });
+}
+
+export async function closeSheet() {
+  if (inOBR) await OBR.modal.close(SHEET_MODAL);
+  else window.close();
+}
+
+// ---- Rolls ------------------------------------------------------------
+export async function broadcastRoll(event) {
+  if (!inOBR) {
+    appendLog({ ...event, at: Date.now() });
+    return;
+  }
+  await OBR.broadcast.sendMessage(ROLL_CHANNEL, event, { destination: "ALL" });
+}
+
+export function readLog() {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { return []; }
+}
+
+export function appendLog(entry) {
+  const log = readLog();
+  log.unshift(entry);
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(log.slice(0, 40))); } catch { /* ignore */ }
+  window.dispatchEvent(new CustomEvent("myrrodin-log"));
+}
+
+export function notify(text, variant = "DEFAULT") {
+  if (inOBR) return OBR.notification.show(text, variant);
+  return null;
+}
