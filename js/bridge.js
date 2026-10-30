@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR from "../vendor/obr-sdk.js?v=1.4.0";
+import OBR from "../vendor/obr-sdk.js?v=1.6.0";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -41,7 +41,13 @@ const previewSave = (all) => {
 
 // ---- Who am I -----------------------------------------------------------
 export async function me() {
-  if (!inOBR) return { id: "preview-gm", role: "GM", name: "You (preview)", connectionId: "local" };
+  if (!inOBR) {
+    // Preview only: add ?as=player to the address to see the player's view.
+    const asPlayer = new URLSearchParams(location.search).get("as") === "player";
+    return asPlayer
+      ? { id: "preview-player", role: "PLAYER", name: "Player (preview)", connectionId: "local-p" }
+      : { id: "preview-gm", role: "GM", name: "You (preview)", connectionId: "local" };
+  }
   const [id, role, name, connectionId] = await Promise.all([
     OBR.player.getId(), OBR.player.getRole(), OBR.player.getName(), OBR.player.getConnectionId(),
   ]);

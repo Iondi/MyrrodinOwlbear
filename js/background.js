@@ -1,9 +1,10 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen } from "./bridge.js?v=1.4.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.4.0";
-import { normalize } from "./rules.js?v=1.4.0";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen } from "./bridge.js?v=1.6.0";
+import { syncFromGoogle } from "./gsheet.js?v=1.6.0";
+import * as Combat from "./combat.js?v=1.6.0";
+import { normalize } from "./rules.js?v=1.6.0";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -70,7 +71,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.4.0"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.6.0"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -82,6 +83,42 @@ function listenDiceControl() {
       if (dice.pending.length) { const next = dice.pending.splice(0); next.forEach(showDice); }
     }
   });
+}
+
+// ---- Combat: pop the tracker open for everyone, announce turns ----
+function watchCombat(self) {
+  let lastId = null;
+  let lastTurn = null;
+  const closedFor = () => { try { return sessionStorage.getItem("myrrodin-tracker-closed") || ""; } catch { return ""; } };
+
+  const onState = async (st) => {
+    if (!st?.active) {
+      if (lastId) { lastId = null; lastTurn = null; OBR.popover.close(Combat.TRACKER_POPOVER).catch(() => {}); }
+      return;
+    }
+    if (st.id !== lastId) {
+      lastId = st.id;
+      lastTurn = st.currentId;
+      if (closedFor() !== st.id) Combat.openTracker().catch(() => {});
+      OBR.notification.show(self.role === "GM" ? "⚔ Combat started. Players are being asked to join." : "⚔ Combat is starting! Join from the Initiative window on the right.", "INFO");
+    }
+    if (st.currentId && st.currentId !== lastTurn) {
+      lastTurn = st.currentId;
+      const e = (st.entries || []).find((x) => x.id === st.currentId);
+      if (!e) return;
+      const mine = e.owner && e.owner === self.id;
+      OBR.notification.show(mine ? `✦ Round ${st.round}: your turn, ${e.name}!` : `⚔ Round ${st.round}: ${e.name}'s turn`, mine ? "SUCCESS" : "DEFAULT");
+    }
+  };
+  Combat.getCombat().then(onState).catch(() => {});
+  Combat.onCombatChange(onState);
+  OBR.scene.onReadyChange((ready) => { if (ready) Combat.getCombat().then(onState).catch(() => {}); });
+
+  // Remember when someone hides the tracker so it doesn't keep popping back.
+  OBR.broadcast.onMessage(`${NS}/sheet-tracker-closed`, (e) => { try { sessionStorage.setItem("myrrodin-tracker-closed", e.data); } catch { /* ignore */ } });
+
+  // Only the GM's computer writes the fight; players' rolls arrive here.
+  if (self.role === "GM") OBR.broadcast.onMessage(Combat.JOIN_CHANNEL, (e) => { Combat.applyJoin(e.data).catch(() => {}); });
 }
 
 function startGoogleSync() {
@@ -158,4 +195,5 @@ OBR.onReady(async () => {
     if (diceAnimOn() && r.dice?.length && !(mine && sheetRecentlyOpen())) showDice(r).catch(() => {});
   });
   listenDiceControl();
+  watchCombat(self);
 });

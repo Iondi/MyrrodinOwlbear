@@ -8,8 +8,8 @@
 //  between players' copies still work. Anything it can't find is listed
 //  on the sheet so you know what didn't sync.
 // =====================================================================
-import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.4.0";
-import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.4.0";
+import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.6.0";
+import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.6.0";
 
 // ---------------------------------------------------------------------
 // Links and downloading
@@ -104,6 +104,21 @@ const isNum = (v) => typeof v === "number" || (typeof v === "string" && /^[+-]?\
 const toNum = (v) => (typeof v === "number" ? v : Number(String(v).trim()));
 const isText = (v) => typeof v === "string" && !/^(-|—|---|\.|□|#value!|#ref!|#n\/a|false|true)$/i.test(v.trim());
 const clean = (v) => String(v).replace(/\s+/g, " ").trim();
+const isNone = (v) => /^(none|n\/a|no|-)$/i.test(String(v ?? "").trim());
+// "Weapons: Simple weapons…" — a label and its value in the same cell.
+function inline(grid, word) {
+  const cell = grid?.find((n, x) => n.startsWith(`${word}`) && /:/.test(String(x.v)))[0];
+  if (!cell) return null;
+  const rest = clean(String(cell.v).replace(/^[^:]*:\s*/, ""));
+  return { cell, rest };
+}
+
+// Split "Resistance - Wisdom" into the spell's name and its note.
+export function splitNote(text) {
+  const t = clean(text);
+  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/) || t.match(/^(.+?)\s*\(([^)]+)\)$/);
+  return m ? { name: m[1].trim(), note: m[2].trim() } : { name: t, note: "" };
+}
 
 function pickTab(tabs, ...hints) {
   return tabs.find((t) => hints.some((h) => norm(t.name).includes(h))) || null;
@@ -246,8 +261,14 @@ export function readCharacter(tabs) {
   const speed = below(basic, speedLabel);
   if (need("Speed", speed !== undefined)) {
     out.speed = clean(speed);
+    const notes = [];
     const note = basic.get(speedLabel.r + 2, speedLabel.c);
-    if (note !== undefined && isText(note) && !isNum(note)) out.speedNotes = clean(note);
+    if (note !== undefined && isText(note) && !isNum(note)) notes.push(clean(note));
+    for (const x of basic.list.filter((x) => x.r === speedLabel.r && x.c > speedLabel.c && typeof x.v === "string" && /^(fly|swim|climb|burrow|hover)/i.test(x.v.trim()))) {
+      const v = basic.get(x.r + 1, x.c);
+      if (v !== undefined) notes.push(`${clean(x.v)} ${clean(v)}`);
+    }
+    if (notes.length) out.speedNotes = notes.join(", ");
   }
 
   const sheetInit = below(basic, label(basic, "initiative"), "num");
@@ -256,22 +277,50 @@ export function readCharacter(tabs) {
 
   // Levels: the first "Level" label is the main level, a second one is the 2nd level.
   const levelLabels = basic ? basic.find((n) => n === "level").sort((a, b) => a.r - b.r || a.c - b.c) : [];
+  const extras = [];
   const lv1 = below(basic, levelLabels[0], "num");
-  if (need("Level", lv1 !== undefined)) out.level = toNum(lv1);
   const lv2 = below(basic, levelLabels[1], "num");
-  if (lv2 !== undefined) out.level2 = toNum(lv2);
+  const combinedCell = label(basic, "combined level");
+  if (lv1 !== undefined) {
+    out.level = toNum(lv1);
+    if (lv2 !== undefined) out.level2 = toNum(lv2);
+  } else if (combinedCell && below(basic, combinedCell, "num") !== undefined) {
+    // Multiclass sheets: one column per class, then "Combined Level".
+    out.level = toNum(below(basic, combinedCell, "num"));
+    out.level2 = 0;
+    const parts = basic.list
+      .filter((x) => x.r === combinedCell.r && x.c < combinedCell.c && typeof x.v === "string" && isNum(basic.get(x.r + 1, x.c)))
+      .sort((a, b) => a.c - b.c)
+      .map((x) => `${clean(x.v)} ${toNum(basic.get(x.r + 1, x.c))}`);
+    if (parts.length) extras.push(`Levels: ${parts.join(", ")}`);
+  } else missing.push("Level");
+  if (out.xp === undefined) {
+    missing.splice(missing.indexOf("Experience"), missing.includes("Experience") ? 1 : 0);
+    // Per-class experience: class names over big numbers on a label row.
+    const classNames = String(out.class || "").toLowerCase();
+    const xpCells = basic ? basic.list.filter((x) => typeof x.v === "string" && classNames.includes(norm(x.v)) && norm(x.v).length > 2 && toNum(basic.get(x.r + 1, x.c)) >= 1000) : [];
+    if (xpCells.length) extras.push(`Experience: ${xpCells.sort((a, b) => a.c - b.c).map((x) => `${clean(x.v)} ${toNum(basic.get(x.r + 1, x.c)).toLocaleString()}`).join(", ")}`);
+  }
 
   // Lineage & background: the text on the row under the Level label.
-  if (levelLabels[0]) {
-    const valueRow = levelLabels[0].r + 1;
+  const levelRowCell = levelLabels[0] || combinedCell;
+  if (levelRowCell) {
+    const valueRow = levelRowCell.r + 1;
     const texts = basic.list
-      .filter((x) => x.r === valueRow && isText(x.v) && !isNum(x.v))
+      .filter((x) => x.r === valueRow && isText(x.v) && !isNum(x.v) && !/^\s*\d*d\d+/i.test(x.v) && !/^[\d,.\s]+$/.test(x.v))
       .sort((a, b) => a.c - b.c)
       .map((x) => clean(x.v));
     const strip = (s) => s.replace(/^background\s*[-–:]\s*/i, "").replace(/\s*background$/i, "").trim();
-    if (texts.length >= 2) { out.lineage = strip(texts[0]); out.background = strip(texts[1]); }
-    else if (texts.length === 1) {
-      if (/background/i.test(texts[0])) out.background = strip(texts[0]); else out.lineage = texts[0];
+    // "Race: Avariel" and "Background: Fey Touched" say what they are.
+    const rest = [];
+    for (const t of texts) {
+      if (/^race\s*:/i.test(t)) out.race = t.replace(/^race\s*:\s*/i, "");
+      else if (/^background\s*:/i.test(t)) out.background = strip(t);
+      else rest.push(t);
+    }
+    if (rest.length >= 2) { out.lineage = strip(rest[0]); out.background = strip(rest[1]); }
+    else if (rest.length === 1) {
+      if (/background/i.test(rest[0]) && !out.background) out.background = strip(rest[0]); else out.lineage = strip(rest[0]);
     }
   }
 
@@ -285,8 +334,29 @@ export function readCharacter(tabs) {
   }
 
   // Skills/Abilities, Notes and Details lists become features.
+  // Other labelled numbers on the main tab (Wild Shape, Damage Dice, a soul
+  // counter…) become info lines so nothing on the sheet is lost.
+  if (basic) {
+    const known = new Set(["initiative", "armor class", "ac", "speed", "max hp", "current hp", "experience", "xp", "spell save dc", "will check", "will save",
+      "level", "combined level", "mana", "mana used", "mana regen", "money", "fly", "swim", "climb", "burrow", "hover"]);
+    const classNames = String(out.class || "").toLowerCase();
+    const labelRows = new Set(["initiative", "max hp", "spell save dc", "mana"].map((n) => label(basic, n)?.r).filter(Boolean));
+    if (combinedCell) labelRows.add(combinedCell.r);
+    const seen = new Set();
+    for (const x of basic.list.filter((x) => labelRows.has(x.r) && typeof x.v === "string")) {
+      const n = norm(x.v);
+      if (known.has(n) || (n.length > 2 && classNames.includes(n)) || seen.has(n)) continue;
+      const v = basic.get(x.r + 1, x.c);
+      if (v === undefined || (typeof v === "string" && !isText(v))) continue;
+      seen.add(n);
+      extras.push(`${clean(x.v)}: ${clean(v)}`);
+    }
+  }
+
   out.features = [
+    ...extras,
     ...listBelow(basic, label(basic, "skills/abilities", "skills / abilities", "abilities")),
+    ...listBelow(basic, label(basic, "invocations")),
     ...listBelow(basic, label(basic, "notes")),
     ...listBelow(basic, label(basic, "details")),
   ];
@@ -299,6 +369,18 @@ export function readCharacter(tabs) {
     if (v === undefined && basic) {
       const cell = label(basic, want);
       if (cell) for (let dc = 1; dc <= 3 && v === undefined; dc++) { const x = basic.get(cell.r, cell.c + dc); if (isNum(x)) v = x; }
+    }
+    if (v === undefined) {
+      // A homebrew score like "Int+Wis": take the sheet's modifier and pick a
+      // score that gives the same modifier.
+      const sc = label(scores, want);
+      const text = sc ? scores.get(sc.r + 1, sc.c) : undefined;
+      const mod = sc ? scores.get(sc.r + 1, sc.c + 1) : undefined;
+      if (isNum(mod)) {
+        v = 10 + 2 * toNum(mod);
+        out.warnings = out.warnings || [];
+        out.warnings.push(`${a.name} is "${clean(text ?? "?")}" on the sheet (modifier ${toNum(mod) >= 0 ? "+" : ""}${toNum(mod)}), shown here as ${v} so the modifier matches.`);
+      }
     }
     if (need(a.name, v !== undefined)) out.abilities[a.key] = toNum(v);
   }
@@ -346,12 +428,42 @@ export function readCharacter(tabs) {
   need("Skills", foundSkills > 0);
 
   // ---- Feats, languages, proficiencies, blurb ----
-  out.feats = listBelow(scores, label(scores, "feats"));
-  const langs = listRight(scores, label(scores, "languages"));
+  const featsCell = label(scores, "feats");
+  out.feats = [];
+  if (featsCell) {
+    for (let r = featsCell.r + 1; r <= featsCell.r + 12; r++) {
+      const row = scores.list.filter((x) => x.r === r && x.c >= featsCell.c && x.c <= featsCell.c + 30).sort((a, b) => a.c - b.c);
+      const texts = row.filter((x) => isText(x.v) && !isNum(x.v)).map((x) => clean(x.v));
+      if (!row.length) break;
+      out.feats.push(...texts);
+    }
+    out.feats = [...new Set(out.feats)];
+  }
+  // Labels with their values to the right, sometimes carrying on to the next row.
+  const rightOf = (word) => {
+    const cell = label(scores, word);
+    if (cell) {
+      const vals = listRight(scores, cell);
+      // The list may carry on along the next row (starting under the label).
+      const under = scores.get(cell.r + 1, cell.c);
+      if (under === undefined || (isText(under) && !/:/.test(String(under)))) {
+        if (under !== undefined && isText(under)) vals.push(clean(under));
+        vals.push(...listRight(scores, { r: cell.r + 1, c: cell.c }));
+      }
+      return vals;
+    }
+    const inl = inline(scores, word);
+    if (!inl) return [];
+    const vals = inl.rest ? [inl.rest] : [];
+    const nextCell = scores.get(inl.cell.r + 1, inl.cell.c);
+    if (nextCell !== undefined && isText(nextCell) && !/:/.test(nextCell)) vals.push(clean(nextCell));
+    return vals;
+  };
+  const langs = rightOf("languages");
   if (langs.length) out.languages = langs.join(", ");
-  const weap = listRight(scores, label(scores, "weapons"));
+  const weap = rightOf("weapons");
   if (weap.length) out.weaponProfs = weap.join(", ");
-  const armor = listRight(scores, label(scores, "armor"));
+  const armor = rightOf("armor");
   if (armor.length) out.armorProfs = armor.join(", ");
   const blurbCell = scores?.find((n) => n.startsWith("short character background"))[0];
   if (blurbCell) {
@@ -373,8 +485,9 @@ export function readCharacter(tabs) {
         name: clean(name),
         range: clean(attackTab.get(r, t.col("range")) ?? ""),
         ability: abilityKey(attackTab.get(r, t.col("type"))) || "str",
-        damage: clean(attackTab.get(r, t.col("die modifier")) ?? ""),
-        damageType: titleCase(clean(attackTab.get(r, t.col("damage")) ?? "")),
+        damage: isNone(attackTab.get(r, t.col("die modifier"))) ? "" : clean(attackTab.get(r, t.col("die modifier")) ?? ""),
+        damageType: isNone(attackTab.get(r, t.col("damage"))) ? "" : titleCase(clean(attackTab.get(r, t.col("damage")) ?? "")),
+        sheetToHit: t.col("attack") && isNum(attackTab.get(r, t.col("attack"))) ? toNum(attackTab.get(r, t.col("attack"))) : undefined,
         proficient: yes(attackTab.get(r, t.col("prof"))),
         equipped: yes(attackTab.get(r, t.col("equipped"))),
       });
@@ -396,19 +509,28 @@ export function readCharacter(tabs) {
     for (const t of readTables(grid, ["learn", "name", "mana cost"])) {
       const level = spellLevelAbove(grid, t.r);
       for (const r of t.rows) {
-        const name = grid.get(r, t.col("name"));
-        if (name === undefined || !isText(name)) continue;
+        // "Name" is two merged cells; some names were typed into the second half.
+        let name = grid.get(r, t.col("name"));
+        if (name === undefined || !isText(name)) name = grid.get(r, t.col("name") + 1);
+        if (name === undefined || !isText(name) || isNum(name)) continue;
+        const split = splitNote(name);
         const mana = grid.get(r, t.col("mana cost"));
         const lvl = level ?? (SPELL_LEVELS.find((l) => l.mana === toNum(mana))?.level ?? 1);
-        const get = (k) => { const c = t.col(k); const v = c ? grid.get(r, c) : undefined; return v === undefined || !isText(v) ? "" : clean(v); };
+        const get = (k) => { const c = t.col(k); const v = c ? grid.get(r, c) : undefined; return v === undefined || !isText(v) || isNone(v) ? "" : clean(v); };
+        // Damage: "Damage" on older sheets, "Die Modifier" (+ a flat "Modifier") on newer ones.
+        let damage = get("damage") || get("die modifier");
+        const flat = t.cols.modifier !== undefined ? grid.get(r, t.cols.modifier) : undefined;
+        if (damage && isNum(flat) && toNum(flat)) damage = `${damage}+${toNum(flat)}`;
+        else if (!damage && isNum(flat) && toNum(flat)) damage = String(toNum(flat));
         out.spells.push({
           level: lvl,
-          name: clean(name),
+          name: split.name,
+          note: split.note,
           type: get("type"),
           castTime: get("casting time"),
           range: get("range"),
-          damage: get("damage"),
-          damageType: (() => { const c = t.cols["type#2"]; const v = c ? grid.get(r, c) : undefined; return v && isText(v) ? clean(v) : ""; })(),
+          damage,
+          damageType: (() => { const c = t.cols["type#2"]; const v = c ? grid.get(r, c) : undefined; return v && isText(v) && !isNone(v) ? clean(v) : ""; })(),
           save: get("saving throw"),
           mana: isNum(mana) ? toNum(mana) : SPELL_LEVELS[lvl]?.mana ?? 0,
           dc: isNum(grid.get(r, t.col("dc to cast"))) ? toNum(grid.get(r, t.col("dc to cast"))) : SPELL_LEVELS[lvl]?.dc ?? 0,
@@ -539,6 +661,12 @@ export function mergeIntoSheet(current, imported, missing) {
   if (d.features) c.features = d.features;
   if (d.feats) c.feats = d.feats;
   if (d.attacks) {
+    const dv0 = derive(c);
+    d.attacks.forEach((a) => {
+      if (a.sheetToHit === undefined) return;
+      a.bonus = a.sheetToHit - (dv0.mods[a.ability] + (a.proficient ? dv0.pb : 0));
+      delete a.sheetToHit;
+    });
     const old = new Map((c.attacks || []).map((a) => [a.name, a]));
     c.attacks = d.attacks.map((a) => {
       const o = old.get(a.name) || {};
@@ -555,6 +683,7 @@ export function mergeIntoSheet(current, imported, missing) {
     lastSync: Date.now(),
     lastError: "",
     missing,
+    warnings: d.warnings || [],
     snap: { hpCurrent: d.hpCurrent, manaUsed: d.manaUsed },
   };
   return c;
