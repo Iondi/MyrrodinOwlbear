@@ -1,13 +1,24 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR from "../vendor/obr-sdk.js";
+import OBR from "../vendor/obr-sdk.js?v=1.5.0";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
 export const ROLL_CHANNEL = `${NS}/roll`;
 export const LOG_KEY = "myrrodin-roll-log";
 export const SHEET_MODAL = `${NS}/sheet-modal`;
+export const DICE_MODAL = `${NS}/dice-modal`;
+export const DICE_CHANNEL = `${NS}/dice-show`;
+export const DICE_CONTROL = `${NS}/dice-control`;
+// Per-player switches kept in this browser.
+const pref = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
+export const diceAnimOn = () => pref("myrrodin-dice-anim", "on") !== "off";
+export const setDiceAnim = (on) => { try { localStorage.setItem("myrrodin-dice-anim", on ? "on" : "off"); } catch { /* ignore */ } };
+// The sheet window says "I'm open" every couple of seconds; your own rolls
+// then animate inside the sheet instead of over the map.
+export const markSheetOpen = () => { try { localStorage.setItem("myrrodin-sheet-open", String(Date.now())); } catch { /* ignore */ } };
+export const sheetRecentlyOpen = () => Date.now() - Number(pref("myrrodin-sheet-open", "0")) < 4000;
 export const inOBR = OBR.isAvailable;
 export { OBR };
 
@@ -30,7 +41,13 @@ const previewSave = (all) => {
 
 // ---- Who am I -----------------------------------------------------------
 export async function me() {
-  if (!inOBR) return { id: "preview-gm", role: "GM", name: "You (preview)", connectionId: "local" };
+  if (!inOBR) {
+    // Preview only: add ?as=player to the address to see the player's view.
+    const asPlayer = new URLSearchParams(location.search).get("as") === "player";
+    return asPlayer
+      ? { id: "preview-player", role: "PLAYER", name: "Player (preview)", connectionId: "local-p" }
+      : { id: "preview-gm", role: "GM", name: "You (preview)", connectionId: "local" };
+  }
   const [id, role, name, connectionId] = await Promise.all([
     OBR.player.getId(), OBR.player.getRole(), OBR.player.getName(), OBR.player.getConnectionId(),
   ]);
@@ -117,7 +134,7 @@ export function onSheetsChange(callback) {
 }
 
 export async function openSheet(itemId, extra = "") {
-  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}`);
+  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}&v=1.3.0`);
   if (!inOBR) { window.open(url, "_blank"); return; }
   await OBR.modal.open({ id: SHEET_MODAL, url, width: 920, height: 780 });
 }

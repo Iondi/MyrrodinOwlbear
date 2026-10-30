@@ -73,6 +73,23 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ---
 
+## Combat & initiative
+
+1. GM: open the **Myr'rodin** panel and click **⚔ Start combat**.
+2. An **Initiative** window pops up on the right for everyone.
+   - Monsters, NPCs, and any sheet without an owner roll their initiative automatically.
+   - Each player sees **"Combat is starting! Would you like to join?"** with **Join & roll** for their own character. The roll shows as celestial dice for the whole table.
+   - If a player is away, the GM can click **Roll for them**.
+3. The order sorts itself: highest first, ties go to the higher Dexterity score.
+4. GM clicks **Begin round 1**, then **Done — next** at the end of each turn. The round counter goes up when it wraps. **◀** steps back if you skip someone by mistake.
+5. Everyone gets a notification when the turn changes, and the active player sees **"It's your turn"**.
+
+GM extras: click an initiative number to change it, **✕** removes someone, **+ Add new tokens** pulls in sheets placed after combat started, and **End combat** (click twice) closes it for everyone. Players see HP bars for player characters only; the GM sees everyone's.
+
+For a sheet to count as a player's, set its **Owner** on the Sheet tab. Anyone can hide the window with ✕ and bring it back with **Show initiative** in the Myr'rodin panel.
+
+---
+
 ## Celestial dice
 
 Every roll plays a glowing star-glass dice animation. Rolls from the sheet animate inside the sheet for the person rolling, and over the map for everyone else in the room. Natural 20s burst gold, natural 1s crack red, and advantage shows both d20s with the dropped one dimmed. Private rolls only animate for the roller and the GM.
@@ -137,6 +154,10 @@ css/dice.css         the celestial dice look
 dice.html            the click-through layer over the map while dice roll
 js/diceanim.js       draws and animates the dice
 js/dicepage.js       runs the layer over the map
+tracker.html         the initiative window
+js/tracker.js        draws the initiative window
+js/combat.js         turn order, joining and rolling
+css/tracker.css      the initiative window's look
 vendor/obr-sdk.js    Owlbear's official SDK (v3.1.0), bundled
 vendor/fflate.js     small unzip library (reads Google's .xlsx download)
 characters/          example character (Lyrith Taewen)

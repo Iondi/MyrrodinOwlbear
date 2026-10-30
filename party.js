@@ -1,7 +1,8 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js";
-import { normalize } from "./rules.js";
-import { roll } from "./dice.js";
+import * as B from "./bridge.js?v=1.5.0";
+import { normalize } from "./rules.js?v=1.5.0";
+import { roll } from "./dice.js?v=1.5.0";
+import * as Combat from "./combat.js?v=1.5.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -91,6 +92,12 @@ partyEl.addEventListener("click", async (e) => {
   await refresh();
 });
 
+const animBox = document.getElementById("dice-anim");
+if (animBox) {
+  animBox.checked = B.diceAnimOn();
+  animBox.addEventListener("change", () => B.setDiceAnim(animBox.checked));
+}
+
 document.getElementById("clear-log").addEventListener("click", () => {
   try { localStorage.setItem(B.LOG_KEY, "[]"); } catch { /* ignore */ }
   renderLog();
@@ -101,7 +108,7 @@ function freeRoll() {
   const expr = input.value.trim();
   if (!expr) return;
   const r = roll(expr);
-  B.broadcastRoll({ character: self.name, player: self.name, label: expr, total: r.total, detail: r.detail, crit: r.crit, fumble: r.fumble, hidden: false });
+  B.broadcastRoll({ character: self.name, player: self.name, label: expr, total: r.total, detail: r.detail, crit: r.crit, fumble: r.fumble, hidden: false, dice: r.dice });
   input.select();
   if (!B.inOBR) renderLog();
 }
@@ -129,12 +136,31 @@ async function safeRefresh() {
   }
 }
 
+const combatBar = document.getElementById("combat-bar");
+let combatState = null;
+function renderCombatBar() {
+  if (!self) return;
+  const active = combatState?.active;
+  if (!active && self.role !== "GM") { combatBar.innerHTML = ""; return; }
+  combatBar.innerHTML = active
+    ? `<div class="combat-on"><span>⚔ Combat · round ${combatState.round}</span><button class="small" id="show-tracker">Show initiative</button></div>`
+    : `<button class="primary combat-start" id="start-combat">⚔ Start combat</button>`;
+  document.getElementById("show-tracker")?.addEventListener("click", () => Combat.reopenTracker());
+  document.getElementById("start-combat")?.addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    await Combat.startCombat();
+  });
+}
+
 (async () => {
   renderLog();
   await B.whenReady();
   self = await B.me();
   partyEl.innerHTML = `<p class="muted small" style="text-align:center">Gathering the party…</p>`;
   await safeRefresh();
+  combatState = await Combat.getCombat().catch(() => null);
+  renderCombatBar();
+  Combat.onCombatChange((st) => { combatState = st; renderCombatBar(); });
   let unsubscribe = null;
   const watch = () => { try { unsubscribe?.(); unsubscribe = B.onSheetsChange(safeRefresh); } catch { /* scene not ready yet */ } };
   watch();

@@ -2,11 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js";
-import { roll, d20, plus, isDiceExpression } from "./dice.js";
-import * as B from "./bridge.js";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js";
+} from "./rules.js?v=1.5.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.5.0";
+import * as B from "./bridge.js?v=1.5.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.5.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.5.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.5.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -59,6 +60,12 @@ const abilityOptions = ABILITIES.map((a) => [a.key, a.short]);
 // ---------------------------------------------------------------------------
 // Toasts and rolling
 // ---------------------------------------------------------------------------
+let diceHostEl = null;
+function diceHost() {
+  if (!diceHostEl) { diceHostEl = document.createElement("div"); diceHostEl.className = "cd-host"; document.body.appendChild(diceHostEl); }
+  return diceHostEl;
+}
+
 function toast(html, kind = "") {
   const box = document.getElementById("toasts");
   const el = document.createElement("div");
@@ -76,7 +83,9 @@ function send(label, result, extra = {}) {
     total: result.total, detail: result.detail,
     crit: !!result.crit, fumble: !!result.fumble, hidden: privateRolls, ...extra,
   };
+  if (result.dice?.length) event.dice = result.dice;
   B.broadcastRoll(event).catch(() => {});
+  if (event.dice && B.diceAnimOn()) { B.markSheetOpen(); playDice(diceHost(), event); return; }
   const tag = event.crit ? `<b class="crit">Critical!</b>` : event.fumble ? `<b class="fumble">Natural 1</b>` : event.outcome ? `<b class="${event.outcome === "Success" ? "crit" : "fumble"}">${event.outcome}</b>` : "";
   toast(`<div class="toast-top"><span>${esc(label)}</span>${tag}</div><div class="toast-total">${esc(result.total)}</div><div class="toast-detail">${esc(result.detail)}</div>`,
     event.crit || event.outcome === "Success" ? "good" : event.fumble || event.outcome === "Failed" ? "bad" : "");
@@ -793,6 +802,23 @@ function computeCanEdit() {
   return !state.ownerId || state.ownerId === self.id;
 }
 
+// If the token gets renamed in Owlbear, rename the sheet too, as long as
+// the sheet's name still matches the token's old name (so a name you typed
+// on the sheet yourself is never overwritten). Google-linked sheets keep
+// the Google Sheet's name.
+function followTokenName() {
+  if (!state || !canEdit || !token?.name || state.googleSheet?.id) return false;
+  const label = token.name;
+  if (label === state.name) { if (state.tokenName !== label) { state.tokenName = label; return true; } return false; }
+  const old = state.tokenName || token.imageName || "";
+  if ((old && state.name === old) || (state.monster && state.name === state.race)) {
+    state.name = label;
+    state.tokenName = label;
+    return true;
+  }
+  return false;
+}
+
 function applyRemote(sheet) {
   pendingRemote = null;
   const json = JSON.stringify(sheet);
@@ -826,6 +852,7 @@ function showCreate() {
   const begin = async (data, keepName = false) => {
     state = normalize({ ...data, ownerId: self.role === "GM" ? "" : self.id });
     if (!keepName && token?.name) state.name = token.name;
+    state.tokenName = state.name === token?.name ? token.name : "";
     canEdit = true;
     render();
     await saveNow();
@@ -950,6 +977,7 @@ async function start() {
     canEdit = computeCanEdit();
     if (state.gmOnly && self.role !== "GM") { showMessage("This sheet is private to the GM."); }
     else {
+      if (followTokenName()) scheduleSave();
       render();
       // Pull the latest from Google when the sheet opens.
       const g = state.googleSheet;
@@ -961,12 +989,17 @@ async function start() {
     const t = await B.getToken(itemId);
     if (!t) return;
     token = t;
+    if (state && followTokenName()) { render(); scheduleSave(); }
     if (!t.sheet) { if (state) { state = null; showMessage("This sheet was removed."); } return; }
     if (JSON.stringify(t.sheet) === lastSaved) return;
     const typing = app.contains(document.activeElement) && document.activeElement.matches("input, textarea, select");
     if (typing) pendingRemote = t.sheet;
     else applyRemote(t.sheet);
   });
+
+  // Tell the background page this sheet is open, so your own rolls animate here.
+  B.markSheetOpen();
+  setInterval(() => { if (document.visibilityState === "visible") B.markSheetOpen(); }, 1500);
 
   // Save before the window goes away.
   window.addEventListener("pagehide", () => { if (state && canEdit) saveNow(); });

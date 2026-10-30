@@ -353,3 +353,9 @@ button.stat:hover b { color: var(--gold); }
 .bst-meta { font-size: 12px; color: var(--muted); font-weight: 500; }
 .bst-opts { display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .bst-credit { margin-left: auto; }
+
+/* Combat bar in the party panel */
+.combat-bar { padding: 12px 12px 0; }
+.combat-bar:empty { display: none; }
+.combat-start { width: 100%; justify-content: center; padding: 10px; font-family: var(--display); letter-spacing: .06em; }
+.combat-on { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(240, 122, 139, .55); background: rgba(226, 71, 92, .12); font-family: var(--display); font-size: 13px; }
