@@ -111,11 +111,32 @@ document.getElementById("free-dice").addEventListener("keydown", (e) => { if (e.
 window.addEventListener("storage", (e) => { if (e.key === B.LOG_KEY) renderLog(); });
 window.addEventListener("myrrodin-log", renderLog);
 
+function showNoScene() {
+  document.getElementById("party-sub").textContent = "No scene open";
+  partyEl.innerHTML = `<div class="empty-state">
+    <p><b>Open a scene to see the party.</b></p>
+    <p class="muted small">Sheets live on tokens, so they show up here once a scene with character tokens is open.</p>
+  </div>`;
+}
+
+async function safeRefresh() {
+  try {
+    if (B.inOBR && !(await B.OBR.scene.isReady())) { showNoScene(); return; }
+    await refresh();
+  } catch (err) {
+    console.error("[Myr'rodin] couldn't load the party", err);
+    showNoScene();
+  }
+}
+
 (async () => {
+  renderLog();
   await B.whenReady();
   self = await B.me();
-  await refresh();
-  renderLog();
-  B.onSheetsChange(refresh);
-  if (B.inOBR) B.OBR.scene.onReadyChange((ready) => { if (ready) refresh(); });
+  partyEl.innerHTML = `<p class="muted small" style="text-align:center">Gathering the party…</p>`;
+  await safeRefresh();
+  let unsubscribe = null;
+  const watch = () => { try { unsubscribe?.(); unsubscribe = B.onSheetsChange(safeRefresh); } catch { /* scene not ready yet */ } };
+  watch();
+  if (B.inOBR) B.OBR.scene.onReadyChange((ready) => { if (ready) watch(); safeRefresh(); });
 })();
