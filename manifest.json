@@ -1,0 +1,16 @@
+{
+  "name": "Myr'rodin System",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "author": "emberbelle",
+  "description": "Character sheets, dice and party tracking for the Myr'rodin homebrew system.",
+  "icon": "icon.svg",
+  "background_url": "background.html",
+  "action": {
+    "title": "Myr'rodin",
+    "icon": "icon.svg",
+    "popover": "party.html",
+    "width": 380,
+    "height": 640
+  }
+}

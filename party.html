@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Myr'rodin Party</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="party-page">
+  <header class="party-head">
+    <div class="sigil small" aria-hidden="true"></div>
+    <div><h1>Myr'rodin</h1><p class="muted small" id="party-sub">Party</p></div>
+  </header>
+  <section id="party"></section>
+  <section class="log-wrap">
+    <div class="panel-head bare"><h3>Roll log</h3><button class="link" id="clear-log">Clear</button></div>
+    <div class="dice-box">
+      <input id="free-dice" placeholder="Quick roll, e.g. 2d6+3" aria-label="Dice to roll" />
+      <button class="primary" id="free-roll">Roll</button>
+    </div>
+    <ol id="log"></ol>
+  </section>
+  <script type="module" src="js/party.js"></script>
+</body>
+</html>
