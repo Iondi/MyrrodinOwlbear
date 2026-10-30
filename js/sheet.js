@@ -2,9 +2,11 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js";
-import { roll, d20, plus, isDiceExpression } from "./dice.js";
-import * as B from "./bridge.js";
+} from "./rules.js?v=1.3.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.3.0";
+import * as B from "./bridge.js?v=1.3.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.3.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.3.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -147,6 +149,7 @@ function header() {
     </div>
     <div class="hero-actions">
       <span class="save-state" id="save-state">${canEdit ? "Saved" : "View only"}</span>
+      ${state.googleSheet?.id ? `<button class="ghost gs-badge ${state.googleSheet.lastError ? "bad" : ""}" data-action="gsync" ${canEdit ? "" : "disabled"} title="${esc(state.googleSheet.lastError || `Linked to Google Sheets. Last synced ${ago(state.googleSheet.lastSync)}.`)}"><span class="gs-dot"></span>${syncing ? "Syncing…" : "Google Sheet"}</button>` : ""}
       <label class="chk private" title="Only you and the GM see your rolls"><input type="checkbox" data-local="private" ${privateRolls ? "checked" : ""}/><span>Private rolls</span></label>
       ${canEdit ? `<button class="ghost" data-action="longrest" title="Restore HP, mana and psi">Long rest</button>` : ""}
       ${B.inOBR ? `<button class="ghost icon" data-action="close" title="Close">✕</button>` : ""}
@@ -412,6 +415,7 @@ function tabSettings() {
   if (state.ownerId && !ownerOpts.some(([id]) => id === state.ownerId)) ownerOpts.push([state.ownerId, "A player who isn't here right now"]);
   return `
     <div class="grid-2">
+      ${googlePanel()}
       ${isGM ? `<div class="panel">
         <div class="panel-head"><h3>Who can edit</h3></div>
         ${field("Owner", sel("ownerId", ownerOpts))}
@@ -433,6 +437,56 @@ function tabSettings() {
         <button class="danger" data-action="deletesheet">${deleteArmed ? "Click again to delete" : "Delete sheet"}</button>
       </div>` : ""}
     </div>`;
+}
+
+function ago(t) {
+  if (!t) return "never";
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 45) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h} hr ago` : new Date(t).toLocaleDateString();
+}
+
+function googlePanel() {
+  const g = state.googleSheet || {};
+  if (!g.id) {
+    return `<div class="panel span-2 gs-panel">
+      <div class="panel-head"><h3>Google Sheet</h3></div>
+      <p class="muted small">Link this character's Google Sheet and Owlbear keeps it up to date. Stats, skills, spells, weapons and gear come from the sheet. In Google Sheets, click <b>Share</b> and set General access to <b>Anyone with the link</b> (Viewer) first.</p>
+      ${canEdit ? `<div class="gs-link"><input id="gs-url" placeholder="https://docs.google.com/spreadsheets/d/…" aria-label="Google Sheet link" /><button class="primary" data-action="glink">Link & sync</button></div>` : `<p class="empty">Not linked.</p>`}
+    </div>`;
+  }
+  const missing = (g.missing || []).length
+    ? `<p class="small warn-text">Couldn't find on the sheet: ${esc(g.missing.join(", "))}. Those stay as they are here.</p>` : "";
+  return `<div class="panel span-2 gs-panel">
+    <div class="panel-head"><h3>Google Sheet</h3>${canEdit ? `<span class="head-tools"><button data-action="gsync">${syncing ? "Syncing…" : "Sync now"}</button><button class="link" data-action="gunlink">Unlink</button></span>` : ""}</div>
+    <p class="small"><a href="${esc(g.url || `https://docs.google.com/spreadsheets/d/${g.id}`)}" target="_blank" rel="noopener">Open the Google Sheet ↗</a> <span class="muted">· last synced ${ago(g.lastSync)}</span></p>
+    ${g.lastError ? `<p class="small warn-text">${esc(g.lastError)}</p>` : ""}
+    ${missing}
+    ${chk("googleSheet.auto", "Keep syncing automatically (about once a minute while the GM is in the room)")}
+    <p class="muted small">Edit stats in the Google Sheet; changes made here to synced fields get replaced on the next sync. Current HP, mana and psi used in play stay here, unless the Google Sheet's own Current HP or Mana Used changes.</p>
+  </div>`;
+}
+
+let syncing = false;
+async function syncNow(quiet = false) {
+  if (!state?.googleSheet?.id || syncing || !canEdit) return;
+  syncing = true;
+  render();
+  try {
+    const next = await syncFromGoogle(normalize(state));
+    state = normalize(next);
+    if (!quiet) toast(`Synced from Google Sheets.${state.googleSheet.missing?.length ? ` ${state.googleSheet.missing.length} field(s) not found.` : ""}`, "good");
+  } catch (err) {
+    console.error("[Myr'rodin] sync failed", err);
+    state.googleSheet = { ...state.googleSheet, lastError: err.message || "Sync failed." };
+    if (!quiet) toast(esc(state.googleSheet.lastError), "bad");
+  }
+  syncing = false;
+  render();
+  await saveNow();
 }
 
 const TAB_RENDER = { character: tabCharacter, skills: tabSkills, combat: tabCombat, magic: tabMagic, gear: tabGear, settings: tabSettings };
@@ -571,6 +625,19 @@ app.addEventListener("click", async (e) => {
       toast("Long rest taken: HP, mana and psi restored.", "good");
       commit(); break;
     case "export": showExport(); break;
+    case "gsync": syncNow(false); break;
+    case "glink": {
+      const url = document.getElementById("gs-url")?.value.trim();
+      const id = sheetIdFromUrl(url);
+      if (!id) { toast("That doesn't look like a Google Sheets link.", "bad"); break; }
+      state.googleSheet = { id, url, auto: true, lastSync: 0 };
+      await syncNow(false);
+      break;
+    }
+    case "gunlink":
+      delete state.googleSheet;
+      toast("Unlinked. The sheet keeps its current numbers.");
+      commit(); break;
     case "import": showImport(false); break;
     case "deletesheet":
       if (!deleteArmed) { deleteArmed = true; render(); break; }
@@ -726,6 +793,23 @@ function computeCanEdit() {
   return !state.ownerId || state.ownerId === self.id;
 }
 
+// If the token gets renamed in Owlbear, rename the sheet too, as long as
+// the sheet's name still matches the token's old name (so a name you typed
+// on the sheet yourself is never overwritten). Google-linked sheets keep
+// the Google Sheet's name.
+function followTokenName() {
+  if (!state || !canEdit || !token?.name || state.googleSheet?.id) return false;
+  const label = token.name;
+  if (label === state.name) { if (state.tokenName !== label) { state.tokenName = label; return true; } return false; }
+  const old = state.tokenName || token.imageName || "";
+  if ((old && state.name === old) || (state.monster && state.name === state.race)) {
+    state.name = label;
+    state.tokenName = label;
+    return true;
+  }
+  return false;
+}
+
 function applyRemote(sheet) {
   pendingRemote = null;
   const json = JSON.stringify(sheet);
@@ -750,19 +834,111 @@ function showCreate() {
       <div class="roll-row center">
         <button class="primary" id="new-blank">Start a blank sheet</button>
         <button id="new-import">Load a character</button>
+        <button id="new-monster">Monster from the 5E bestiary</button>
+        <button id="new-google">Link a Google Sheet</button>
         <button id="new-example">Use the example (Lyrith)</button>
       </div>
       ${B.inOBR ? `<button class="link" data-action="close">Cancel</button>` : ""}
     </div>`;
-  const begin = async (data) => {
+  const begin = async (data, keepName = false) => {
     state = normalize({ ...data, ownerId: self.role === "GM" ? "" : self.id });
+    if (!keepName && token?.name) state.name = token.name;
+    state.tokenName = state.name === token?.name ? token.name : "";
     canEdit = true;
     render();
     await saveNow();
   };
   document.getElementById("new-blank").onclick = () => begin(blankCharacter(token?.name || "New Adventurer"));
   document.getElementById("new-import").onclick = () => { state = null; showImport(true); };
+  document.getElementById("new-monster").onclick = () => showBestiary(begin);
+  document.getElementById("new-google").onclick = () => {
+    const el = overlay(`
+      <h3>Link a Google Sheet</h3>
+      <p class="muted small">In Google Sheets, click <b>Share</b> and set General access to <b>Anyone with the link</b> (Viewer). Then copy the link from your browser's address bar and paste it here.</p>
+      <input id="gs-new-url" placeholder="https://docs.google.com/spreadsheets/d/…" />
+      <div class="roll-row"><button class="primary" data-go>Link & sync</button><button data-close>Cancel</button></div>`);
+    el.querySelector("[data-go]").addEventListener("click", async () => {
+      const url = el.querySelector("#gs-new-url").value.trim();
+      const id = sheetIdFromUrl(url);
+      if (!id) { toast("That doesn't look like a Google Sheets link.", "bad"); return; }
+      const btn = el.querySelector("[data-go]");
+      btn.disabled = true; btn.textContent = "Reading the sheet…";
+      try {
+        const base = normalize({ ...blankCharacter(token?.name || "New Adventurer"), googleSheet: { id, url, auto: true, lastSync: 0 } });
+        const synced = await syncFromGoogle(base);
+        el.remove();
+        await begin(synced, true);
+        toast(`Linked ${esc(state.name)}.${state.googleSheet.missing?.length ? ` ${state.googleSheet.missing.length} field(s) not found; see the Sheet tab.` : ""}`, "good");
+      } catch (err) {
+        btn.disabled = false; btn.textContent = "Link & sync";
+        toast(esc(err.message || "Couldn't read that sheet."), "bad");
+      }
+    });
+  };
   document.getElementById("new-example").onclick = async () => begin(await (await fetch(B.asset("characters/lyrith-taewen.json"))).json());
+}
+
+async function showBestiary(begin) {
+  const el = overlay(`
+    <h3>Monster from the 5E bestiary</h3>
+    <input id="bst-q" placeholder="Search: skeleton, boar, goblin, undead, CR…" aria-label="Search monsters" />
+    <ul class="bst-list" id="bst-list"><li class="muted small">Loading the bestiary…</li></ul>
+    <div class="bst-opts">
+      <label class="chk"><input type="checkbox" id="bst-roll" checked /><span>Roll hit points</span></label>
+      <label class="chk"><input type="checkbox" id="bst-vary" checked /><span>Vary ability scores a little (±1)</span></label>
+      <label class="chk"><input type="checkbox" id="bst-hide" checked /><span>Hide from players</span></label>
+    </div>
+    <div class="roll-row"><button class="primary" id="bst-go" disabled>Create</button><button data-close>Cancel</button>
+      <span class="muted small bst-credit">Stats from the 5E SRD 5.1, CC BY 4.0</span></div>`);
+  el.querySelector(".dialog").classList.add("wide");
+  let list = [];
+  let picked = null;
+  try { list = await loadBestiary(); }
+  catch { el.querySelector("#bst-list").innerHTML = `<li class="warn-text small">Couldn't load the bestiary. Check that the data folder was uploaded to GitHub.</li>`; return; }
+
+  const q = el.querySelector("#bst-q");
+  const ul = el.querySelector("#bst-list");
+  const go = el.querySelector("#bst-go");
+  const draw = (results) => {
+    ul.innerHTML = results.length ? results.map((m) => `<li><button class="bst-row ${picked?.i === m.i ? "picked" : ""}" data-id="${esc(m.i)}">
+        <span class="bst-name">${esc(m.n)}</span>
+        <span class="bst-meta">CR ${crText(m.cr)} · ${esc(m.sz)} ${esc(m.ty)} · AC ${m.ac} · HP ${m.hp} (${esc(m.hd)})</span>
+      </button></li>`).join("") : `<li class="muted small">No match. Try a creature type like beast, undead or humanoid.</li>`;
+  };
+  const run = () => draw(searchBestiary(list, q.value, 40));
+
+  // Start with the token's name, falling back to its picture's name ("Beast").
+  const guesses = [token?.name, token?.imageName].filter(Boolean);
+  let first = guesses.find((g) => searchBestiary(list, g, 1).length) || "";
+  q.value = first;
+  run();
+  const top = searchBestiary(list, first, 1)[0];
+  if (top && first) { picked = top; go.disabled = false; run(); }
+  q.focus(); q.select();
+
+  q.addEventListener("input", run);
+  ul.addEventListener("click", (e) => {
+    const row = e.target.closest("[data-id]");
+    if (!row) return;
+    picked = list.find((m) => m.i === row.dataset.id);
+    go.disabled = !picked;
+    ul.querySelectorAll(".bst-row").forEach((b) => b.classList.toggle("picked", b.dataset.id === picked?.i));
+  });
+  ul.addEventListener("dblclick", (e) => { if (e.target.closest("[data-id]")) go.click(); });
+  go.addEventListener("click", async () => {
+    if (!picked) return;
+    // Use the token's own label if it has one, otherwise the creature's name.
+    const label = token?.name && token.name !== token.imageName ? token.name : "";
+    const c = toCharacter(picked, {
+      rollHp: el.querySelector("#bst-roll").checked,
+      vary: el.querySelector("#bst-vary").checked,
+      name: label,
+    });
+    c.gmOnly = el.querySelector("#bst-hide").checked;
+    el.remove();
+    await begin(c, true);
+    toast(`${esc(c.name)} is ready: ${c.hp.max} HP.`, "good");
+  });
 }
 
 async function start() {
@@ -791,13 +967,20 @@ async function start() {
     lastSaved = JSON.stringify(token.sheet);
     canEdit = computeCanEdit();
     if (state.gmOnly && self.role !== "GM") { showMessage("This sheet is private to the GM."); }
-    else render();
+    else {
+      if (followTokenName()) scheduleSave();
+      render();
+      // Pull the latest from Google when the sheet opens.
+      const g = state.googleSheet;
+      if (g?.id && canEdit && Date.now() - (g.lastSync || 0) > 20000) syncNow(true);
+    }
   }
 
   B.onSheetsChange(async () => {
     const t = await B.getToken(itemId);
     if (!t) return;
     token = t;
+    if (state && followTokenName()) { render(); scheduleSave(); }
     if (!t.sheet) { if (state) { state = null; showMessage("This sheet was removed."); } return; }
     if (JSON.stringify(t.sheet) === lastSaved) return;
     const typing = app.contains(document.activeElement) && document.activeElement.matches("input, textarea, select");

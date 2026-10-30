@@ -1,7 +1,7 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js";
-import { normalize } from "./rules.js";
-import { roll } from "./dice.js";
+import * as B from "./bridge.js?v=1.3.0";
+import { normalize } from "./rules.js?v=1.3.0";
+import { roll } from "./dice.js?v=1.3.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");

@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR from "../vendor/obr-sdk.js";
+import OBR from "../vendor/obr-sdk.js?v=1.3.0";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -43,6 +43,21 @@ export async function partyPlayers() {
 }
 
 // ---- Tokens & sheets --------------------------------------------------
+// The name you type under a token in Owlbear is its label (item.text).
+// item.name is the image's name ("Beast" for the boar), so it's only a fallback.
+export function tokenLabel(item) {
+  const t = item?.text;
+  let label = "";
+  if (t) {
+    if (t.type === "RICH" && Array.isArray(t.richText)) {
+      const walk = (nodes) => nodes.map((n) => (typeof n.text === "string" ? n.text : Array.isArray(n.children) ? walk(n.children) : "")).join("");
+      label = t.richText.map((p) => walk(p.children || [])).join(" ");
+    }
+    if (!label.trim()) label = t.plainText || "";
+  }
+  return label.replace(/\s+/g, " ").trim() || item?.name || "";
+}
+
 export async function getToken(itemId) {
   if (!inOBR) {
     const p = previewItems()[itemId];
@@ -52,7 +67,8 @@ export async function getToken(itemId) {
   if (!item) return null;
   return {
     id: item.id,
-    name: item.name,
+    name: tokenLabel(item),
+    imageName: item.name || "",
     image: item.image?.url || null,
     createdUserId: item.createdUserId,
     sheet: item.metadata?.[KEY] || null,
@@ -88,7 +104,7 @@ export async function listSheets() {
     return Object.entries(previewItems()).map(([id, sheet]) => ({ id, name: sheet.name, image: null, sheet }));
   }
   const items = await OBR.scene.items.getItems((item) => item.metadata?.[KEY] !== undefined);
-  return items.map((item) => ({ id: item.id, name: item.name, image: item.image?.url || null, sheet: item.metadata[KEY] }));
+  return items.map((item) => ({ id: item.id, name: tokenLabel(item), image: item.image?.url || null, sheet: item.metadata[KEY] }));
 }
 
 export function onSheetsChange(callback) {
@@ -101,7 +117,7 @@ export function onSheetsChange(callback) {
 }
 
 export async function openSheet(itemId, extra = "") {
-  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}`);
+  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}&v=1.3.0`);
   if (!inOBR) { window.open(url, "_blank"); return; }
   await OBR.modal.open({ id: SHEET_MODAL, url, width: 920, height: 780 });
 }

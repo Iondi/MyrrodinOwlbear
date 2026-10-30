@@ -1,0 +1,88 @@
+{
+  "system": "myrrodin",
+  "version": 1,
+  "name": "Euphemia (Euphy)",
+  "player": "",
+  "class": "Child of the Twin Sovereigns",
+  "race": "Diamond Dragon",
+  "lineage": "",
+  "background": "Employee of Royalty",
+  "level": 2,
+  "level2": 0,
+  "xp": 2000,
+  "profBonus": 2,
+  "abilities": {
+    "str": 15,
+    "dex": 14,
+    "con": 16,
+    "int": 20,
+    "wis": 16,
+    "cha": 22
+  },
+  "saves": {
+    "str": false,
+    "dex": false,
+    "con": false,
+    "int": false,
+    "wis": false,
+    "cha": false
+  },
+  "skills": {},
+  "ac": 18,
+  "speed": "40",
+  "speedNotes": "",
+  "hp": {
+    "current": 20,
+    "max": 20,
+    "temp": 0
+  },
+  "initMisc": 0,
+  "willMisc": 0,
+  "spellDCMisc": 0,
+  "mana": {
+    "current": 13,
+    "max": 13,
+    "regen": "1d10"
+  },
+  "psi": {
+    "current": 0,
+    "max": 0
+  },
+  "combat": [],
+  "features": [
+    "Cosmic Adaptation: gain resistance to one extra damage type after each long rest (two at 10th level, three at 18th).",
+    "Sovereign Invocations: gain access to invocations, and more as you get them.",
+    "Royal Symbol: Recognised",
+    "Immunity: Charmed",
+    "Advantage vs Frightened",
+    "Advantage vs Sleep",
+    "Resistance: Lightning",
+    "Resistance: Radiant",
+    "Resistance: Slashing / Bludgeoning / Piercing",
+    "Resistance: Fire"
+  ],
+  "feats": [],
+  "attacks": [],
+  "attackNotes": "",
+  "magic": {
+    "ability": "cha",
+    "spells": []
+  },
+  "psionics": [],
+  "equipment": [],
+  "money": {
+    "cp": 0,
+    "sp": 0,
+    "ep": 0,
+    "gp": 50,
+    "pp": 0
+  },
+  "languages": "",
+  "weaponProfs": "",
+  "armorProfs": "",
+  "blurb": "Child of the Twin Sovereigns. Diamond dragon (20) in royal employ.",
+  "goal": "",
+  "notes": "Twin Sovereigns details: Scales — Flawless.\n\nMoney note: 979 — Scales 19. Gems: coloured diamonds.\n\nRoyal Symbol: Your employment is well recognized as a sign of excellence in the kingdom. Where your kingdom's insignia is recognized and received kindly, you are more likely to receive preference in services: first dibs on lodging, extra food and water, even discounts from people trying to curry favor. This won't be the case if you flaunt your position in an enemy kingdom.\n\nCosmic Adaptation: at the end of every long rest, choose one additional damage type. You gain resistance to it until your next long rest.",
+  "gmOnly": false,
+  "ownerId": ""
+}

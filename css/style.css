@@ -173,7 +173,7 @@ button.stat:hover b { color: var(--gold); }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .panel-head.bare { padding: 2px 2px 0; }
-.head-tools { display: flex; gap: 6px; }
+.head-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .span-2 { grid-column: span 2; }
@@ -334,3 +334,22 @@ button.stat:hover b { color: var(--gold); }
   .gear-list li { grid-template-columns: 1fr 56px auto; }
   .gear-list li input:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Google Sheet link */
+.gs-badge { font-size: 12px; padding: 5px 10px; gap: 7px; }
+.gs-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px #5fcf8e26; }
+.gs-badge.bad .gs-dot { background: var(--bad); box-shadow: 0 0 0 3px #ef6a6a26; }
+.gs-link { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.gs-panel a { color: var(--gold); }
+.dialog input#gs-new-url { font-size: 14px; }
+
+/* Bestiary picker */
+.dialog.wide { width: min(720px, 100%); }
+.bst-list { list-style: none; margin: 0; padding: 4px; display: grid; gap: 4px; max-height: min(46vh, 380px); overflow-y: auto; background: var(--sunken); border: 1px solid var(--line); border-radius: 10px; }
+.bst-row { width: 100%; display: grid; gap: 2px; justify-items: start; text-align: left; white-space: normal; background: transparent; border-color: transparent; padding: 7px 10px; }
+.bst-row:hover { background: var(--raised); border-color: var(--line-strong); }
+.bst-row.picked { background: var(--ember-soft); border-color: var(--ember); }
+.bst-name { font-family: var(--display); font-size: 15px; }
+.bst-meta { font-size: 12px; color: var(--muted); font-weight: 500; }
+.bst-opts { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.bst-credit { margin-left: auto; }
