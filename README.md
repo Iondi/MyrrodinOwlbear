@@ -73,6 +73,14 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ---
 
+## Celestial dice
+
+Every roll plays a glowing star-glass dice animation. Rolls from the sheet animate inside the sheet for the person rolling, and over the map for everyone else in the room. Natural 20s burst gold, natural 1s crack red, and advantage shows both d20s with the dropped one dimmed. Private rolls only animate for the roller and the GM.
+
+Each player can turn the animation off for themselves with the **Dice animation** checkbox in the Myr'rodin panel.
+
+---
+
 ## Monsters from the 5E bestiary
 
 Right-click any character token → **Create Myr'rodin Sheet → Monster from the 5E bestiary**.
@@ -125,6 +133,10 @@ data/bestiary.json   the 334 SRD creatures
 js/dice.js           the dice roller
 js/bridge.js         talks to Owlbear
 css/style.css        colours and layout (colours are at the top)
+css/dice.css         the celestial dice look
+dice.html            the click-through layer over the map while dice roll
+js/diceanim.js       draws and animates the dice
+js/dicepage.js       runs the layer over the map
 vendor/obr-sdk.js    Owlbear's official SDK (v3.1.0), bundled
 vendor/fflate.js     small unzip library (reads Google's .xlsx download)
 characters/          example character (Lyrith Taewen)

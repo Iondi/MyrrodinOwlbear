@@ -1,7 +1,7 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.3.0";
-import { normalize } from "./rules.js?v=1.3.0";
-import { roll } from "./dice.js?v=1.3.0";
+import * as B from "./bridge.js?v=1.4.0";
+import { normalize } from "./rules.js?v=1.4.0";
+import { roll } from "./dice.js?v=1.4.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -91,6 +91,12 @@ partyEl.addEventListener("click", async (e) => {
   await refresh();
 });
 
+const animBox = document.getElementById("dice-anim");
+if (animBox) {
+  animBox.checked = B.diceAnimOn();
+  animBox.addEventListener("change", () => B.setDiceAnim(animBox.checked));
+}
+
 document.getElementById("clear-log").addEventListener("click", () => {
   try { localStorage.setItem(B.LOG_KEY, "[]"); } catch { /* ignore */ }
   renderLog();
@@ -101,7 +107,7 @@ function freeRoll() {
   const expr = input.value.trim();
   if (!expr) return;
   const r = roll(expr);
-  B.broadcastRoll({ character: self.name, player: self.name, label: expr, total: r.total, detail: r.detail, crit: r.crit, fumble: r.fumble, hidden: false });
+  B.broadcastRoll({ character: self.name, player: self.name, label: expr, total: r.total, detail: r.detail, crit: r.crit, fumble: r.fumble, hidden: false, dice: r.dice });
   input.select();
   if (!B.inOBR) renderLog();
 }

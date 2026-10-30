@@ -2,11 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.3.0";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.3.0";
-import * as B from "./bridge.js?v=1.3.0";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.3.0";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.3.0";
+} from "./rules.js?v=1.4.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.4.0";
+import * as B from "./bridge.js?v=1.4.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.4.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.4.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.4.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -59,6 +60,12 @@ const abilityOptions = ABILITIES.map((a) => [a.key, a.short]);
 // ---------------------------------------------------------------------------
 // Toasts and rolling
 // ---------------------------------------------------------------------------
+let diceHostEl = null;
+function diceHost() {
+  if (!diceHostEl) { diceHostEl = document.createElement("div"); diceHostEl.className = "cd-host"; document.body.appendChild(diceHostEl); }
+  return diceHostEl;
+}
+
 function toast(html, kind = "") {
   const box = document.getElementById("toasts");
   const el = document.createElement("div");
@@ -76,7 +83,9 @@ function send(label, result, extra = {}) {
     total: result.total, detail: result.detail,
     crit: !!result.crit, fumble: !!result.fumble, hidden: privateRolls, ...extra,
   };
+  if (result.dice?.length) event.dice = result.dice;
   B.broadcastRoll(event).catch(() => {});
+  if (event.dice && B.diceAnimOn()) { B.markSheetOpen(); playDice(diceHost(), event); return; }
   const tag = event.crit ? `<b class="crit">Critical!</b>` : event.fumble ? `<b class="fumble">Natural 1</b>` : event.outcome ? `<b class="${event.outcome === "Success" ? "crit" : "fumble"}">${event.outcome}</b>` : "";
   toast(`<div class="toast-top"><span>${esc(label)}</span>${tag}</div><div class="toast-total">${esc(result.total)}</div><div class="toast-detail">${esc(result.detail)}</div>`,
     event.crit || event.outcome === "Success" ? "good" : event.fumble || event.outcome === "Failed" ? "bad" : "");
@@ -987,6 +996,10 @@ async function start() {
     if (typing) pendingRemote = t.sheet;
     else applyRemote(t.sheet);
   });
+
+  // Tell the background page this sheet is open, so your own rolls animate here.
+  B.markSheetOpen();
+  setInterval(() => { if (document.visibilityState === "visible") B.markSheetOpen(); }, 1500);
 
   // Save before the window goes away.
   window.addEventListener("pagehide", () => { if (state && canEdit) saveNow(); });

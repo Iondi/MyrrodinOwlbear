@@ -1,9 +1,9 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel } from "./bridge.js?v=1.3.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.3.0";
-import { normalize } from "./rules.js?v=1.3.0";
+import { OBR, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen } from "./bridge.js?v=1.4.0";
+import { syncFromGoogle } from "./gsheet.js?v=1.4.0";
+import { normalize } from "./rules.js?v=1.4.0";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -55,6 +55,33 @@ function startNameFollow() {
   OBR.scene.onReadyChange((ready) => { if (ready) run(); });
   run();
   OBR.scene.items.onChange((items) => { check(items.filter((i) => i.metadata?.[KEY] !== undefined)).catch(() => {}); });
+}
+
+// ---- Celestial dice over the map ----
+const dice = { open: false, ready: false, pending: [], openedAt: 0 };
+function flushDice() {
+  while (dice.pending.length) OBR.broadcast.sendMessage(DICE_CHANNEL, dice.pending.shift(), { destination: "LOCAL" });
+}
+async function showDice(r) {
+  dice.pending.push(r);
+  if (dice.pending.length > 3) dice.pending.shift();
+  // If the layer never reported back, start over.
+  if (dice.open && !dice.ready && Date.now() - dice.openedAt > 8000) dice.open = false;
+  if (dice.open) { if (dice.ready) flushDice(); return; }
+  dice.open = true; dice.ready = false; dice.openedAt = Date.now();
+  await OBR.modal.open({
+    id: DICE_MODAL, url: asset("dice.html?v=1.4.0"),
+    fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
+  });
+}
+function listenDiceControl() {
+  OBR.broadcast.onMessage(DICE_CONTROL, (e) => {
+    if (e.data === "ready") { dice.ready = true; flushDice(); }
+    if (e.data === "closed") {
+      dice.open = false; dice.ready = false;
+      if (dice.pending.length) { const next = dice.pending.splice(0); next.forEach(showDice); }
+    }
+  });
 }
 
 function startGoogleSync() {
@@ -125,5 +152,10 @@ OBR.onReady(async () => {
     const text = `${lock}${who} · ${r.label}: ${r.total}${tag}   (${r.detail})`;
     const variant = r.crit || r.outcome === "Success" ? "SUCCESS" : r.fumble || r.outcome === "Failed" ? "WARNING" : "DEFAULT";
     OBR.notification.show(text, variant);
+
+    // The dice animation: everyone sees it over the map. Your own rolls play
+    // inside the sheet instead when the sheet is open.
+    if (diceAnimOn() && r.dice?.length && !(mine && sheetRecentlyOpen())) showDice(r).catch(() => {});
   });
+  listenDiceControl();
 });
