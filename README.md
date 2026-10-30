@@ -57,6 +57,22 @@ For NPCs and monsters, tick **Hide this sheet from players** on the Sheet tab.
 
 ---
 
+## Linking a Google Sheet
+
+Each character can stay in their Google Sheet and update Owlbear automatically.
+
+1. In Google Sheets, click **Share** and set **General access** to **Anyone with the link** (Viewer).
+2. Copy the sheet's link from the address bar.
+3. In Owlbear, right-click the token → **Create Myr'rodin Sheet → Link a Google Sheet**, and paste the link. For a sheet that already exists, paste it on the **Sheet** tab instead.
+
+What syncs: name, class, level, XP, ability scores, saves, skill tiers (totals match the Google Sheet exactly), AC, speed, max HP, mana, mana regen, Initiative, Will Check, Spell Save DC, combat helper, features, feats, weapons, spells, psionics, inventory and money.
+
+What stays in Owlbear: current HP, spent mana and psi during play, and combat-helper ticks. If the Google Sheet's own **Current HP** or **Mana Used** changes, that wins.
+
+While the GM has the room open, linked sheets re-sync about once a minute. Anyone who can edit a sheet can also click **Sync now**. The Sheet tab lists anything it couldn't find on the Google Sheet (usually a renamed label).
+
+---
+
 ## Backups
 
 Sheets live on the token. **If you delete the token or the scene, the sheet goes with it.** Use **Sheet → Export character** to copy a backup, and **Import character** (or **Load a character** on a new token) to bring it back. This is also how a character moves to a new scene or a new room.
@@ -89,9 +105,11 @@ background.html/js   adds the right-click menu and shows everyone's rolls
 party.html/js        the toolbar panel (party, quick dice, roll log)
 sheet.html/js        the character sheet
 js/rules.js          the Myr'rodin rules — edit this one for house rules
+js/gsheet.js         reads a Google Sheet into a character
 js/dice.js           the dice roller
 js/bridge.js         talks to Owlbear
 css/style.css        colours and layout (colours are at the top)
 vendor/obr-sdk.js    Owlbear's official SDK (v3.1.0), bundled
+vendor/fflate.js     small unzip library (reads Google's .xlsx download)
 characters/          example character (Lyrith Taewen)
 ```
