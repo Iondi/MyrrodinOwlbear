@@ -97,7 +97,7 @@ function attackBonus(a, d) {
 
 function calcMap() {
   const d = derive(state);
-  const m = { init: fmt(d.initiative), will: fmt(d.will), cast: fmt(d.castMod), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
+  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
   ABILITIES.forEach((a) => { m[`mod.${a.key}`] = fmt(d.mods[a.key]); m[`save.${a.key}`] = fmt(d.saves[a.key]); });
   SKILLS.forEach((s) => {
     const sk = d.skills[s.key];
@@ -179,7 +179,7 @@ function vitals() {
       <div class="stat">${inp("ac", { type: "number", cls: "stat-input", label: "Armor Class" })}<span>Armor Class</span></div>
       <button class="stat roll" data-roll="init"><b data-calc="init"></b><span>Initiative</span></button>
       <button class="stat roll" data-roll="will"><b data-calc="will"></b><span>Will Check</span></button>
-      <div class="stat">${inp("spellSaveDC", { type: "number", cls: "stat-input", label: "Spell Save DC" })}<span>Spell Save DC</span></div>
+      <div class="stat"><b data-calc="dc"></b><span>Spell Save DC</span></div>
       <div class="stat">${inp("speed", { cls: "stat-input", label: "Speed" })}<span>Speed</span></div>
       <div class="stat"><b data-calc="pb"></b><span>Proficiency</span></div>
     </div>
@@ -238,7 +238,7 @@ function tabCharacter() {
         </div>
       </div>
       <div class="panel span-2">
-        <div class="panel-head"><h3>Abilities</h3><span class="muted small">Click a modifier to roll a check, or Save to roll a saving throw.</span></div>
+        <div class="panel-head"><h3>Abilities</h3><span class="head-tools"><span class="muted small">Click a modifier to roll a check, or Save to roll a saving throw.</span><button class="roll small" data-roll="willsave" title="Int + Wis, plus proficiency if proficient in both Int and Wis saves (half if only one)">Will save <b data-calc="willsave"></b></button></span></div>
         <div class="abilities">${abilities}</div>
       </div>
       <div class="panel span-2 combat-helper">
@@ -363,9 +363,11 @@ function tabMagic() {
       <div class="fields">
         ${field("Casting ability", sel("magic.ability", abilityOptions), "narrow")}
         <div class="field narrow"><span class="field-label">Cast roll</span><span class="readout">d20 <b data-calc="cast"></b></span></div>
-        ${field("Spell save DC", inp("spellSaveDC", { type: "number" }), "narrow")}
+        <div class="field narrow"><span class="field-label">Spell save DC</span><span class="readout"><b data-calc="dc"></b></span></div>
+        ${field("Extra DC bonus", inp("spellDCMisc", { type: "number", ph: "0" }), "narrow")}
+        <div class="field narrow"><span class="field-label">Suggested regen</span><span class="readout" data-calc="regenhint"></span></div>
       </div>
-      <p class="muted small">Casting a spell = 1d20 + casting modifier + proficiency, against the spell's DC to cast. Mana is spent ${HOUSE_RULES.manaSpentOnFailedCast ? "whether or not the cast succeeds" : "only when the cast succeeds"}.</p>
+      <p class="muted small">Spell save DC = 8 + proficiency + casting modifier. Casting a spell = 1d20 + casting modifier + proficiency, against the spell's DC to cast. Mana is spent ${HOUSE_RULES.manaSpentOnFailedCast ? "whether or not the cast succeeds" : "only when the cast succeeds"}.</p>
       ${canEdit ? `<div class="add-row"><span class="muted small">Add a spell:</span>${SPELL_LEVELS.map((l) => `<button class="add chip" data-action="addspell:${l.level}">${l.label}</button>`).join("")}</div>` : ""}
     </div>
     ${spellHtml ? `<div class="cards">${spellHtml}</div>` : `<p class="empty">No spells yet.</p>`}
@@ -592,6 +594,7 @@ function doRoll(what) {
   switch (kind) {
     case "init": rollCheck("Initiative", d.initiative); break;
     case "will": rollCheck("Will Check", d.will); break;
+    case "willsave": rollCheck("Will save", d.willSave); break;
     case "ability": rollCheck(`${ABILITIES.find((a) => a.key === key).name} check`, d.mods[key]); break;
     case "save": rollCheck(`${ABILITIES.find((a) => a.key === key).name} save`, d.saves[key]); break;
     case "skill": {

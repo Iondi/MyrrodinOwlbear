@@ -75,10 +75,18 @@ export const XP_TABLE = [
   11000, 12000, 13000, 14000, 15000, 20000, 25000, 30000, 35000, 40000,
   45000, 50000, 55000, 60000, 65000, 70000, 75000, 80000, 85000, 90000,
 ];
-// Ability points by level (levels 1–13 on your sheet).
-export const ABILITY_POINTS = [0, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
-// Mana column by level (levels 1–13 on your sheet).
-export const MANA_BY_LEVEL = ["0", "1", "1d4", "1d6", "1d8", "2d4", "1d10", "1d12", "2d6", "3d4", "2d8", "4d4", "1d20"];
+// Mana regen by Intelligence score (the "Ability Point / Mana" table on
+// your FORMULAS tab). Int 11 -> 1, Int 20 -> 1d10, and so on.
+export const MANA_REGEN_BY_INT = [
+  [0, "0"], [10, "1"], [12, "1d4"], [14, "1d6"], [16, "1d8"], [18, "2d4"],
+  [20, "1d10"], [22, "1d12"], [24, "2d6"], [26, "3d4"], [28, "2d8"], [30, "4d4"], [32, "1d20"],
+];
+export function manaRegenFor(intScore) {
+  const n = Number(intScore) || 0;
+  let out = "0";
+  MANA_REGEN_BY_INT.forEach(([need, regen]) => { if (n >= need) out = regen; });
+  return out;
+}
 
 export function levelFromXp(xp) {
   const n = Number(xp) || 0;
@@ -133,8 +141,16 @@ export function derive(c) {
     saves,
     skills,
     initiative: mods.dex + (Number(c.initMisc) || 0),
-    will: mods.wis + (Number(c.willMisc) || 0),
+    // Will Check = Intelligence modifier + Wisdom modifier.
+    will: mods.int + mods.wis + (Number(c.willMisc) || 0),
+    // Will Save = Will Check + full proficiency if proficient in BOTH Int and
+    // Wis saves, half proficiency (rounded down) if proficient in only one.
+    willSave: mods.int + mods.wis + (Number(c.willMisc) || 0) +
+      (c.saves?.int && c.saves?.wis ? pb : c.saves?.int || c.saves?.wis ? Math.floor(pb / 2) : 0),
     castMod: mods[castAbility] + pb,
+    // Spell Save DC = 8 + proficiency + spellcasting modifier.
+    spellDC: 8 + pb + mods[castAbility] + (Number(c.spellDCMisc) || 0),
+    suggestedRegen: manaRegenFor(c.abilities?.int),
     combinedLevel: (Number(c.level) || 0) + (Number(c.level2) || 0),
     xpLevel: levelFromXp(c.xp),
   };
@@ -166,7 +182,7 @@ export function blankCharacter(name = "New Adventurer") {
     hp: { current: 10, max: 10, temp: 0 },
     initMisc: 0,
     willMisc: 0,
-    spellSaveDC: 10,
+    spellDCMisc: 0,
     mana: { current: 0, max: 0, regen: "0" },
     psi: { current: 0, max: 0 },
     combat: [],
