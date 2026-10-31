@@ -4,8 +4,8 @@
 //  scenes). The GM's computer makes every change: players ask by message
 //  ("take this", "stash that") and the GM's side moves the items.
 // =====================================================================
-import { OBR, NS, inOBR, listSheets, saveSheet, getToken } from "./bridge.js?v=1.7.0";
-import { normalize } from "./rules.js?v=1.7.0";
+import { OBR, NS, inOBR, listSheets, saveSheet, getToken } from "./bridge.js?v=1.7.1";
+import { normalize } from "./rules.js?v=1.7.1";
 
 export const STASH_KEY = `${NS}/stash`;
 export const STASH_CHANNEL = `${NS}/stash-request`;

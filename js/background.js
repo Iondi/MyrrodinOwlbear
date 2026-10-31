@@ -1,11 +1,11 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, setMenuTab } from "./bridge.js?v=1.7.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.7.0";
-import * as Combat from "./combat.js?v=1.7.0";
-import * as Stash from "./stash.js?v=1.7.0";
-import { normalize } from "./rules.js?v=1.7.0";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, setMenuTab } from "./bridge.js?v=1.7.1";
+import { syncFromGoogle } from "./gsheet.js?v=1.7.1";
+import * as Combat from "./combat.js?v=1.7.1";
+import * as Stash from "./stash.js?v=1.7.1";
+import { normalize } from "./rules.js?v=1.7.1";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -72,7 +72,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.7.0"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.7.1"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -98,7 +98,7 @@ function watchCombat(self) {
     if (want && !hudOpen) {
       hudOpen = true;
       await OBR.modal.open({
-        id: HUD_MODAL, url: asset("hud.html?v=1.7.0"),
+        id: HUD_MODAL, url: asset("hud.html?v=1.7.1"),
         fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
       }).catch(() => { hudOpen = false; });
     } else if (!want && hudOpen) {

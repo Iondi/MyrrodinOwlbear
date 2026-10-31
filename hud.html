@@ -7,21 +7,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hud.css?v=1.7.0" />
+  <link rel="stylesheet" href="css/hud.css?v=1.7.1" />
 </head>
 <body>
   <div id="hud" class="hud"></div>
+  <script type="module" src="js/hud.js?v=1.7.1"></script>
   <script>
-  // Always run the newest upload: if GitHub's copy of the extension is newer
-  // than this page, reload this page fresh instead of using a cached copy.
+  // If GitHub has a newer version than this page, reload this page fresh
+  // (the extension code above starts right away; this only checks for updates).
   (function () {
-    var V = "1.7.0", MAIN = "js/hud.js";
-    var q = new URLSearchParams(location.search);
-    function go() { var s = document.createElement("script"); s.type = "module"; s.src = MAIN + "?v=" + V; document.body.appendChild(s); }
+    var V = "1.7.1";
     fetch("manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) {
+      var q = new URLSearchParams(location.search);
       if (m.version && m.version !== V && q.get("fresh") !== m.version) { q.set("fresh", m.version); location.replace(location.pathname + "?" + q.toString() + location.hash); }
-      else go();
-    }).catch(go);
+    }).catch(function () {});
   })();
 </script>
 </body>
