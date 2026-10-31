@@ -67,7 +67,7 @@ Each character can stay in their Google Sheet and update Owlbear automatically.
 
 What syncs: name, class, level, XP, ability scores, saves, skill tiers (totals match the Google Sheet exactly), AC, speed, max HP, mana, mana regen, Initiative, Will Check, Spell Save DC, combat helper, features, feats, weapons (or the Combat Helper's "Attack +X / Damage" lines when there's no weapon table), spells, inventory and money.
 
-**Spell notes:** a spell named like `Resistance - Wisdom` or `Mending (Wisdom)` comes across as the spell **Resistance** with the note **Wisdom**, shown under the spell's level. If the note is an ability (Wisdom, WIS, Charisma…), the **Cast** button rolls with that ability instead of the sheet's usual casting ability. You can also type notes on any spell by hand.
+**Spell names stay whole:** a spell named like `Resistance - Wisdom` or `Mending (Wisdom)` shows exactly as it's written on the Google Sheet. If the part after the dash names an ability (Wisdom, WIS, Charisma…), the **Cast** button rolls with that ability instead of the sheet's usual casting ability, and shows a WIS/CHA tag.
 
 What stays in Owlbear: current HP, spent mana during play, and combat-helper ticks. If the Google Sheet's own **Current HP** or **Mana Used** changes, that wins.
 

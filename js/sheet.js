@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.9.6";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.6";
-import * as B from "./bridge.js?v=1.9.6";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.6";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.6";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.6";
+} from "./rules.js?v=1.9.7";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.7";
+import * as B from "./bridge.js?v=1.9.7";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.9.7";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.7";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.7";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -326,7 +326,7 @@ function spellCard(s, i) {
   const lvl = SPELL_LEVELS[num(s.level)] || SPELL_LEVELS[0];
   const need = castsToLearn(s.level);
   const learning = !s.learned && need > 0;
-  const castWith = noteAbility(s.note);
+  const castWith = noteAbility(splitNote(s.name).note);
   const summary = [s.castTime, s.range && `${s.range}${/^\d+$/.test(String(s.range)) ? " ft" : ""}`, s.damage && `${s.damage}${s.damageType ? ` ${s.damageType}` : ""}`, s.save && `${s.save} save`, s.duration, s.concentration && "Concentration"]
     .filter(Boolean).map(esc).join(" · ");
   const pips = learning ? `<div class="learn-progress" title="${num(s.casts)} of ${need} successful casts">
@@ -335,9 +335,7 @@ function spellCard(s, i) {
   return `<div class="card spell ${learning ? "learning" : ""}">
     <div class="card-head">
       ${inp(`magic.spells.${i}.name`, { cls: "card-title", ph: "Spell name", label: "Spell name" })}
-      <span class="spell-level"><span class="badge">${lvl.label}</span>
-        ${s.note || canEdit ? `<span class="spell-note ${castWith ? "is-ability" : ""} ${s.note ? "" : "empty"}" title="${castWith ? `Cast with ${ABILITIES.find((a) => a.key === castWith).name}` : "Note"}">${inp(`magic.spells.${i}.note`, { cls: "note-input", ph: "Note", label: "Spell note" })}</span>` : ""}
-      </span>
+      <span class="spell-level"><span class="badge">${lvl.label}</span></span>
       ${canEdit ? `<button class="x" data-action="del:magic.spells.${i}" title="Remove">✕</button>` : ""}
     </div>
     ${summary ? `<p class="spell-summary">${summary}</p>` : ""}
@@ -385,7 +383,7 @@ function tabMagic() {
       <summary><h3>Spell library</h3><span class="muted small">${libList.length} spells on the Google Sheet you haven't started learning</span></summary>
       <ul class="lib-list">${libList.map((sp, k) => `<li>
         <span class="badge">${(SPELL_LEVELS[num(sp.level)] || SPELL_LEVELS[0]).label}</span>
-        <span class="lib-name">${esc(sp.name)}${sp.note ? ` <em>${esc(sp.note)}</em>` : ""}<small>${esc([sp.damage && `${sp.damage} ${sp.damageType || ""}`.trim(), `${num(sp.mana)} mana`, num(sp.dc) ? `DC ${num(sp.dc)}` : ""].filter(Boolean).join(" · "))}</small></span>
+        <span class="lib-name">${esc(sp.name)}<small>${esc([sp.damage && `${sp.damage} ${sp.damageType || ""}`.trim(), `${num(sp.mana)} mana`, num(sp.dc) ? `DC ${num(sp.dc)}` : ""].filter(Boolean).join(" · "))}</small></span>
         ${canEdit ? `<button class="small" data-action="learnlib:${k}" title="Add to Learning, so successful casts count toward learning it">Start learning</button>` : ""}
       </li>`).join("")}</ul>
     </details>` : "";
@@ -592,7 +590,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.6"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.7"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
@@ -647,7 +645,7 @@ app.addEventListener("click", async (e) => {
     case "addattack": state.attacks.push({ name: "", range: "5 ft", ability: "str", damage: "1d8", damageType: "", proficient: true, equipped: true, graze: false, bonus: 0, notes: "" }); commit(); break;
     case "addspell": {
       const lvl = SPELL_LEVELS[num(arg)];
-      state.magic.spells.push({ level: lvl.level, casts: 0, local: true, name: "", note: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
+      state.magic.spells.push({ level: lvl.level, casts: 0, local: true, name: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
       commit(); break;
     }
     case "additem": state.equipment.push({ name: "", qty: 1, notes: "" }); commit(); focusLast('[data-path^="equipment."][data-path$=".name"]'); break;
@@ -799,7 +797,7 @@ function castSpell(i, d) {
     commit();
     return;
   }
-  const castWith = noteAbility(s.note);
+  const castWith = noteAbility(splitNote(s.name).note);
   const castMod = castWith ? d.mods[castWith] + d.pb : d.castMod;
   const r = roll(d20(castMod));
   const ok = r.total >= dc;
