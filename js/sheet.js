@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.9.9";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.9";
-import * as B from "./bridge.js?v=1.9.9";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.9.9";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.9";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.9";
+} from "./rules.js?v=1.10.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.10.0";
+import * as B from "./bridge.js?v=1.10.0";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.10.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.10.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.10.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -108,7 +108,7 @@ function attackBonus(a, d) {
 
 function calcMap() {
   const d = derive(state);
-  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), spellhit: fmt(d.castMod + num(state.spellHitMisc)), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
+  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod + num(state.spellHitMisc)), spellhit: fmt(d.castMod + num(state.spellHitMisc)), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
   ABILITIES.forEach((a) => { m[`mod.${a.key}`] = fmt(d.mods[a.key]); m[`save.${a.key}`] = fmt(d.saves[a.key]); });
   SKILLS.forEach((s) => {
     const sk = d.skills[s.key];
@@ -397,14 +397,14 @@ function tabMagic() {
         <div class="field narrow"><span class="field-label">Spell save DC</span><span class="readout"><b data-calc="dc"></b></span></div>
         ${field("Extra DC bonus", inp("spellDCMisc", { type: "number", ph: "0" }), "narrow")}
         <div class="field narrow"><span class="field-label">Suggested regen</span><span class="readout" data-calc="regenhint"></span></div>
-        ${field("Extra to-hit bonus", inp("spellHitMisc", { type: "number", ph: "0" }), "narrow")}
+        ${field("Extra bonus (to-hit & casts)", inp("spellHitMisc", { type: "number", ph: "0" }), "narrow")}
       </div>
       <div class="spell-hit-row">
         <button class="primary roll" data-roll="spellhit" title="d20 + casting modifier + proficiency (+ any extra to-hit bonus)">✦ Roll to hit <b data-calc="spellhit"></b></button>
         <button class="roll" data-roll="spellhit:adv">Advantage</button>
         <button class="roll" data-roll="spellhit:dis">Disadvantage</button>
       </div>
-      <p class="muted small">Cast = d20 + casting modifier + proficiency against the spell's DC; mana is spent on a success. A spell of level N is learned after N successful casts, and cantrips are known automatically.</p>
+      <p class="muted small">Cast = d20 + casting modifier + proficiency (+ the extra bonus) against the spell's DC; mana is spent on a success. A spell of level N is learned after N successful casts, and cantrips are known automatically.</p>
       ${canEdit ? `<div class="add-row"><span class="muted small">Add a spell:</span>${SPELL_LEVELS.map((l) => `<button class="add chip" data-action="addspell:${l.level}">${l.label}</button>`).join("")}</div>` : ""}
     </div>
     <div class="panel-head bare"><h3>Known spells</h3><span class="muted small">${known.length}</span></div>
@@ -589,7 +589,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.9"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.10.0"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
@@ -797,7 +797,8 @@ function castSpell(i, d) {
     return;
   }
   const castWith = noteAbility(splitNote(s.name).note);
-  const castMod = castWith ? d.mods[castWith] + d.pb : d.castMod;
+  // The Spellcasting panel's extra bonus counts on every cast, at every spell level.
+  const castMod = (castWith ? d.mods[castWith] + d.pb : d.castMod) + num(state.spellHitMisc);
   const r = roll(d20(castMod));
   const ok = r.total >= dc;
   send(`${!s.learned && castsToLearn(s.level) > 0 ? "Practice cast" : "Cast"} ${name}${castWith ? ` with ${ABILITIES.find((a) => a.key === castWith).short}` : ""} (DC ${dc})`, r, { outcome: ok ? "Success" : "Failed" });

@@ -1,8 +1,8 @@
 // The Combat tab of the Myr'rodin menu: initiative order, joining, and the
 // GM's turn controls. mountCombat(element) draws it into the menu.
-import * as B from "./bridge.js?v=1.9.9";
-import * as C from "./combat.js?v=1.9.9";
-import { normalize } from "./rules.js?v=1.9.9";
+import * as B from "./bridge.js?v=1.10.0";
+import * as C from "./combat.js?v=1.10.0";
+import { normalize } from "./rules.js?v=1.10.0";
 
 let root = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

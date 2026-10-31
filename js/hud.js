@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.9.9";
-import * as C from "./combat.js?v=1.9.9";
-import { normalize, inParty } from "./rules.js?v=1.9.9";
-import * as Roster from "./roster.js?v=1.9.9";
+import * as B from "./bridge.js?v=1.10.0";
+import * as C from "./combat.js?v=1.10.0";
+import { normalize, inParty } from "./rules.js?v=1.10.0";
+import * as Roster from "./roster.js?v=1.10.0";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

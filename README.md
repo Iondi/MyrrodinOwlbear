@@ -78,7 +78,7 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ## Magic: learning spells
 
-**Roll to hit:** under Spellcasting on the Magic tab, **✦ Roll to hit** rolls a spell attack: d20 + casting modifier + proficiency, plus any **Extra to-hit bonus** you type in. Advantage and Disadvantage buttons sit beside it.
+**Roll to hit:** under Spellcasting on the Magic tab, **✦ Roll to hit** rolls a spell attack: d20 + casting modifier + proficiency, plus any **Extra bonus** you type in. That extra bonus is also added to every **Cast** roll, at every spell level. Advantage and Disadvantage buttons sit beside it.
 
 Spells follow the Crafting System rules:
 
@@ -137,6 +137,20 @@ One loot list for the whole group. It lives with the room, so it follows you bet
 - Players click **Take** to move an item into their character's gear, or **⇢ Stash** on their own gear to put it back.
 - **Split coins among the party** shares the stash's coins evenly between every sheet that has an owner. Leftover coins stay in the stash.
 - Items taken from the stash stay on Google-linked sheets through syncs.
+
+---
+
+## Handouts from Discord
+
+Type **/show** in Discord with a picture, and it appears in Owlbear for everyone. This needs the **Owlbear relay** bot (its own setup guide is in `myrrodin-discord`).
+
+1. GM: open the Myr'rodin menu → **Handouts**, paste the relay address and your FEED_KEY, click **Connect**. They're saved in your browser only; players never see the key.
+2. In Discord: `/show image:` (attach a picture) or `/show link:`, plus an optional `title`.
+3. Within about a minute it pops up big on everyone's screen (click anywhere or press Esc to close), and it's listed in **Handouts**.
+
+GM buttons on each handout: **Show everyone** (pop it up again), **Put on map** (drops it on the map about 6 squares wide), **Delete**. Players can click any handout to look at it again just for themselves. The newest 20 are kept with the room; `/show show_now:False` saves one without popping it up.
+
+Your computer (the GM's) does the checking, so handouts arrive while you have the room open.
 
 ---
 
@@ -208,6 +222,9 @@ js/tracker.js        the Combat tab
 js/inventory.js      the Inventory tab
 js/stash.js          the shared party stash
 js/roster.js         the party saved with the room
+js/handouts.js       handouts from the Discord relay
+js/handoutstab.js    the Handouts tab
+handout.html         the pop-up picture viewer
 hud.html, js/hud.js  the click-through turn-order strip
 js/combat.js         turn order, joining and rolling
 css/tracker.css      the Combat tab's look

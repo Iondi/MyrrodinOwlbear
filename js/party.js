@@ -1,11 +1,12 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.9.9";
-import { normalize, inParty } from "./rules.js?v=1.9.9";
-import { roll } from "./dice.js?v=1.9.9";
-import * as Combat from "./combat.js?v=1.9.9";
-import { mountCombat } from "./tracker.js?v=1.9.9";
-import { mountInventory } from "./inventory.js?v=1.9.9";
-import * as Roster from "./roster.js?v=1.9.9";
+import * as B from "./bridge.js?v=1.10.0";
+import { normalize, inParty } from "./rules.js?v=1.10.0";
+import { roll } from "./dice.js?v=1.10.0";
+import * as Combat from "./combat.js?v=1.10.0";
+import { mountCombat } from "./tracker.js?v=1.10.0";
+import { mountInventory } from "./inventory.js?v=1.10.0";
+import { mountHandouts } from "./handoutstab.js?v=1.10.0";
+import * as Roster from "./roster.js?v=1.10.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -195,7 +196,7 @@ function renderCombatBar() {
 combatBar.addEventListener("click", (e) => { const g = e.target.closest("[data-goto]"); if (g) showTab(g.dataset.goto); });
 
 // ---- Tabs -------------------------------------------------------------------
-const TABS = ["party", "combat", "inventory", "dice"];
+const TABS = ["party", "combat", "inventory", "handouts", "dice"];
 function showTab(name) {
   if (!TABS.includes(name)) name = "party";
   B.setMenuTab(name);
@@ -248,6 +249,7 @@ function setCombatDot(st, me) {
   Combat.onCombatChange((st) => { combatState = st; renderCombatBar(); });
   mountCombat(document.getElementById("combat-root"), (st, me) => setCombatDot(st, me)).catch((err) => console.error(err));
   mountInventory(document.getElementById("inv-root")).catch((err) => console.error(err));
+  mountHandouts(document.getElementById("ho-root")).catch((err) => console.error(err));
   let unsubscribe = null;
   const watch = () => { try { unsubscribe?.(); unsubscribe = B.onSheetsChange(safeRefresh); } catch { /* scene not ready yet */ } };
   watch();
