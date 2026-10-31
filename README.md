@@ -74,6 +74,8 @@ What stays in Owlbear: current HP, spent mana during play, and combat-helper tic
 While the GM has the room open, linked sheets re-sync about once a minute. Anyone who can edit a sheet can also click **Sync now**. The Sheet tab lists anything it couldn't find on the Google Sheet (usually a renamed label).
 
 
+**Custom damage:** every weapon card has a box next to Damage. Type any roll (`2d8+4`, `1d6+3d8`…) and press Enter or **Roll**. Handy for crits, smites and one-off bonuses. The last roll you typed stays in the box.
+
 ## Magic: learning spells
 
 **Roll to hit:** under Spellcasting on the Magic tab, **✦ Roll to hit** rolls a spell attack: d20 + casting modifier + proficiency, plus any **Extra to-hit bonus** you type in. Advantage and Disadvantage buttons sit beside it.

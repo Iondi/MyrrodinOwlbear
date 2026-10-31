@@ -1,8 +1,8 @@
 // The Combat tab of the Myr'rodin menu: initiative order, joining, and the
 // GM's turn controls. mountCombat(element) draws it into the menu.
-import * as B from "./bridge.js?v=1.7.0";
-import * as C from "./combat.js?v=1.7.0";
-import { normalize } from "./rules.js?v=1.7.0";
+import * as B from "./bridge.js?v=1.9.6";
+import * as C from "./combat.js?v=1.9.6";
+import { normalize } from "./rules.js?v=1.9.6";
 
 let root = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -91,7 +91,19 @@ function render() {
       ${waitingList.map((e) => `<div class="trk-wait-row"><span>${esc(e.name)}</span><button class="link small" data-act="rollfor" data-id="${esc(e.id)}">Roll for them</button></div>`).join("")}
     </div>` : (!isGM() && waitingList.length ? `<p class="trk-sub center">Waiting on ${waitingList.length} more…</p>` : "");
 
-  const yourTurn = myTurn ? `<div class="trk-yourturn">✦ It's your turn ✦</div>` : "";
+  // Start of turn: casters re-roll their mana first.
+  const cur = sheets.get(state.currentId);
+  const curSheet = cur?.sheet;
+  const canRegen = curSheet && C.hasMana(curSheet) && (myTurn || isGM());
+  const regenDone = curSheet?.manaTurn === C.turnKey(state);
+  const curName = curSheet ? normalize(curSheet).name : "";
+  const manaStep = canRegen ? `<div class="trk-mana ${regenDone ? "done" : ""}">
+      ${regenDone
+        ? `<span>✓ ${myTurn ? "Mana re-rolled" : `${esc(curName)}'s mana re-rolled`} · ${num(curSheet.mana.current)}/${num(curSheet.mana.max)}</span>`
+        : `<span>${myTurn ? "Start by re-rolling your mana." : `${esc(curName)} starts by re-rolling mana.`}</span>
+           <button class="primary small" data-act="regen" data-id="${esc(state.currentId)}" ${busy ? "disabled" : ""}>✦ Re-roll mana <small>${esc(curSheet.mana.regen || "0")}</small></button>`}
+    </div>` : "";
+  const yourTurn = (myTurn ? `<div class="trk-yourturn">✦ It's your turn ✦</div>` : "") + manaStep;
 
   const notBegun = !state.currentId;
   const gmControls = isGM() ? `<div class="trk-controls">
@@ -112,7 +124,7 @@ function render() {
 }
 
 // Each player chooses whether the turn-order strip shows on their screen, and where.
-const CORNERS = [["tr", "Top right"], ["tl", "Top left"], ["br", "Bottom right"], ["bl", "Bottom left"]];
+const CORNERS = [["br", "Bottom right"], ["bl", "Bottom left"], ["tr", "Top right"], ["tl", "Top left"]];
 function hudSettings() {
   const on = B.hudOn();
   const corner = B.hudCorner();
@@ -147,6 +159,14 @@ async function act(name, id) {
       break;
     }
     case "decline": await C.decline({ id }); break;
+    case "regen": {
+      busy = true; render();
+      const r = await C.regenMana(id, state, self.name).catch(() => null);
+      busy = false;
+      if (r) B.notify(`✦ Mana +${r.gained} (rolled ${r.total}) · now ${r.now}/${r.max}`, "SUCCESS");
+      render();
+      break;
+    }
   }
 }
 

@@ -8,8 +8,8 @@
 //  between players' copies still work. Anything it can't find is listed
 //  on the sheet so you know what didn't sync.
 // =====================================================================
-import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.7.0";
-import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.7.0";
+import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.9.6";
+import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.9.6";
 
 // ---------------------------------------------------------------------
 // Links and downloading
@@ -331,6 +331,11 @@ export function readCharacter(tabs) {
   if (basic) {
     const steps = basic.find((n) => /^\d+(st|nd|rd|th)$/.test(n)).sort((a, b) => a.r - b.r);
     out.combat = steps.map((s) => basic.get(s.r, s.c + 1)).filter((v) => v !== undefined && isText(v)).map(clean);
+    // Newer sheets: free-written lines under the "Super Awesome Fast Combat Helper" heading.
+    if (!out.combat.length) {
+      const head = basic.find((n) => n.startsWith("super awesome fast combat helper"))[0];
+      if (head) out.combat = listBelow(basic, head, 24).filter((t) => !/^place your skills and feats/i.test(t));
+    }
   }
 
   // Skills/Abilities, Notes and Details lists become features.
@@ -503,9 +508,29 @@ export function readCharacter(tabs) {
   }
   if (out.attackNotes && /graze/i.test(out.attackNotes)) out.attacks.forEach((a) => { a.graze = true; });
 
+  // No weapons listed, but the Combat Helper says "Attack +25" and
+  // "Damage: 4d20+…": make that a rollable melee attack.
+  if (!out.attacks.length && out.combat?.length) {
+    const text = out.combat.join("\n");
+    const hit = text.match(/attack[^+\-\d\n]*([+-]\s*\d+)/i);
+    const dmg = text.match(/damage\s*:?\s*((?:\d*d\d+|\d+)(?:\s*[+-]\s*(?:\d*d\d+|\d+))*)/i);
+    if (hit || dmg) {
+      out.attacks.push({
+        name: "Attack (from Combat Helper)", range: "", ability: "str",
+        damage: dmg ? dmg[1].replace(/\s+/g, "") : "", damageType: "",
+        proficient: true, equipped: true, flat: true,
+        sheetToHit: hit ? Number(hit[1].replace(/\s+/g, "")) : undefined,
+      });
+    }
+  }
+
   // ---- Spells (Spell List tab, plus any mana tables on the psionics tab) ----
+  // Spells: cantrips and anything learned or being learned (some successful
+  // casts ticked) go on the sheet. The rest of the spell list is the
+  // "library": shown live from Google, but not saved on the token.
   out.spells = [];
-  for (const grid of [spellTab, psiTab].filter(Boolean)) {
+  out.library = [];
+  for (const grid of [spellTab].filter(Boolean)) {
     for (const t of readTables(grid, ["learn", "name", "mana cost"])) {
       const level = spellLevelAbove(grid, t.r);
       for (const r of t.rows) {
@@ -522,8 +547,16 @@ export function readCharacter(tabs) {
         const flat = t.cols.modifier !== undefined ? grid.get(r, t.cols.modifier) : undefined;
         if (damage && isNum(flat) && toNum(flat)) damage = `${damage}+${toNum(flat)}`;
         else if (!damage && isNum(flat) && toNum(flat)) damage = String(toNum(flat));
-        out.spells.push({
+        // Successful casts so far: the ticked "Cast Times" boxes on this row.
+        let casts = 0;
+        const ct = t.col("cast times");
+        if (ct) for (let cc = ct; cc < ct + 13; cc++) if (yes(grid.get(r, cc))) casts++;
+        const learnedBox = t.col("learn") ? yes(grid.get(r, t.col("learn"))) : true;
+        const learned = lvl === 0 || learnedBox || (lvl > 0 && casts >= lvl);
+        const target = learned || casts > 0 ? out.spells : out.library;
+        target.push({
           level: lvl,
+          casts,
           name: split.name,
           note: split.note,
           type: get("type"),
@@ -538,36 +571,14 @@ export function readCharacter(tabs) {
           condition: get("condition"),
           amplifiable: yes(grid.get(r, t.col("amplifiable"))),
           concentration: yes(grid.get(r, t.col("concentration"))),
-          learned: t.col("learn") ? yes(grid.get(r, t.col("learn"))) : true,
+          learned,
         });
       }
     }
   }
 
-  // ---- Psionics ----
+  // Psionics aren't part of the Myr'rodin System any more.
   out.psionics = [];
-  if (psiTab) {
-    for (const t of readTables(psiTab, ["name", "psi cost"])) {
-      for (const r of t.rows) {
-        const name = psiTab.get(r, t.col("name"));
-        const learned = t.col("learn") ? yes(psiTab.get(r, t.col("learn"))) : false;
-        if (!(name !== undefined && isText(name)) && !learned) continue;
-        const get = (k) => { const c = t.col(k); const v = c ? psiTab.get(r, c) : undefined; return v === undefined || !isText(v) ? "" : clean(v); };
-        const cost = psiTab.get(r, t.col("psi cost"));
-        out.psionics.push({
-          name: name !== undefined && isText(name) ? clean(name) : "",
-          type: get("type"),
-          castTime: get("casting time"),
-          range: get("range"),
-          cost: isNum(cost) ? toNum(cost) : 0,
-          damage: get("die damage"),
-          duration: get("duration"),
-          save: get("target saving throw"),
-          learned: true,
-        });
-      }
-    }
-  }
 
   // ---- Inventory ----
   if (invTab) {
@@ -673,8 +684,22 @@ export function mergeIntoSheet(current, imported, missing) {
       return { bonus: o.bonus || 0, notes: o.notes || "", ...a, graze: a.graze ?? o.graze ?? false };
     });
   }
-  if (d.spells) c.magic = { ...c.magic, spells: d.spells };
-  if (d.psionics) c.psionics = d.psionics;
+  if (d.spells) {
+    const key = (sp) => `${sp.level}|${String(sp.name).trim().toLowerCase()}`;
+    const old = new Map((c.magic?.spells || []).map((sp) => [key(sp), sp]));
+    const merged = d.spells.map((sp) => {
+      const o = old.get(key(sp));
+      old.delete(key(sp));
+      if (!o) return sp;
+      return { ...sp, casts: Math.max(Number(sp.casts) || 0, Number(o.casts) || 0), learned: !!(sp.learned || o.learned), note: sp.note || o.note || "" };
+    });
+    // Spells picked up from the library in Owlbear stay until the sheet has them.
+    for (const o of old.values()) if (o.local) merged.push(o);
+    // Leave out empty fields so big spell lists still fit on a token.
+    const compact = (sp) => Object.fromEntries(Object.entries(sp).filter(([k, v]) => v !== "" && v !== false && v !== undefined && !(k === "casts" && !v)));
+    c.magic = { ...c.magic, spells: merged.map(compact) };
+  }
+  c.psionics = [];
   // Gear: the sheet's list, plus anything added in Owlbear (stash loot etc.).
   if (d.equipment) {
     const local = (c.equipment || []).filter((e) => e.local);
@@ -695,12 +720,18 @@ export function mergeIntoSheet(current, imported, missing) {
   return c;
 }
 
+// The spell library from the last download of each Google Sheet (not saved).
+const libraries = new Map();
+export const getLibrary = (id) => libraries.get(id) || null;
+
 // One call: download, read, merge.
 export async function syncFromGoogle(sheet) {
   const id = sheet?.googleSheet?.id;
   if (!id) throw new SheetError("No Google Sheet linked.");
   const tabs = parseWorkbook(await downloadWorkbook(id));
   const { data, missing } = readCharacter(tabs);
+  libraries.set(id, data.library || []);
+  delete data.library;
   if (!data.abilities || Object.keys(data.abilities).length < 3) {
     throw new SheetError("That doesn't look like a Myr'rodin character sheet. I couldn't find the ability scores.");
   }

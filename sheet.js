@@ -1,13 +1,13 @@
 // The character sheet window.
 import {
-  ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
-  derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.7.0";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.7.0";
-import * as B from "./bridge.js?v=1.7.0";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.7.0";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.7.0";
-import { enqueue as playDice } from "./diceanim.js?v=1.7.0";
+  ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
+  derive, fmt, blankCharacter, normalize, abilityMod, inParty,
+} from "./rules.js?v=1.9.6";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.6";
+import * as B from "./bridge.js?v=1.9.6";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.6";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.6";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.6";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -108,7 +108,7 @@ function attackBonus(a, d) {
 
 function calcMap() {
   const d = derive(state);
-  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
+  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), spellhit: fmt(d.castMod + num(state.spellHitMisc)), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
   ABILITIES.forEach((a) => { m[`mod.${a.key}`] = fmt(d.mods[a.key]); m[`save.${a.key}`] = fmt(d.saves[a.key]); });
   SKILLS.forEach((s) => {
     const sk = d.skills[s.key];
@@ -117,7 +117,7 @@ function calcMap() {
   state.attacks.forEach((a, i) => {
     const mod = d.mods[a.ability || "str"];
     m[`atk.${i}`] = fmt(attackBonus(a, d));
-    m[`dmg.${i}`] = plus(a.damage || "0", mod);
+    m[`dmg.${i}`] = a.flat ? (a.damage || "0") : plus(a.damage || "0", mod);
     m[`graze.${i}`] = Math.max(mod, 0);
   });
   m.xphint = d.xpLevel > num(state.level) ? `Enough XP for level ${d.xpLevel}` : `XP level ${d.xpLevel}`;
@@ -136,7 +136,6 @@ function updateCalcs() {
   };
   bar("hp", num(state.hp.current), num(state.hp.max));
   bar("mana", num(state.mana.current), num(state.mana.max));
-  bar("psi", num(state.psi.current), num(state.psi.max));
   const hpCard = app.querySelector(".vital.hp");
   if (hpCard) hpCard.classList.toggle("low", num(state.hp.current) <= num(state.hp.max) / 4);
 }
@@ -159,8 +158,9 @@ function header() {
     <div class="hero-actions">
       <span class="save-state" id="save-state">${canEdit ? "Saved" : "View only"}</span>
       ${state.googleSheet?.id ? `<button class="ghost gs-badge ${state.googleSheet.lastError ? "bad" : ""}" data-action="gsync" ${canEdit ? "" : "disabled"} title="${esc(state.googleSheet.lastError || `Linked to Google Sheets. Last synced ${ago(state.googleSheet.lastSync)}.`)}"><span class="gs-dot"></span>${syncing ? "Syncing…" : "Google Sheet"}</button>` : ""}
+      ${self?.role === "GM" && B.inOBR ? `<label class="chk campaign ${inParty(state) ? "on" : ""}" title="Keep this character in the campaign party: saved with the room and carried to every scene"><input type="checkbox" data-local="campaign" ${inParty(state) ? "checked" : ""}/><span>Campaign party</span></label>` : ""}
       <label class="chk private" title="Only you and the GM see your rolls"><input type="checkbox" data-local="private" ${privateRolls ? "checked" : ""}/><span>Private rolls</span></label>
-      ${canEdit ? `<button class="ghost" data-action="longrest" title="Restore HP, mana and psi">Long rest</button>` : ""}
+      ${canEdit ? `<button class="ghost" data-action="longrest" title="Restore HP and mana">Long rest</button>` : ""}
       ${B.inOBR ? `<button class="ghost icon" data-action="close" title="Close">✕</button>` : ""}
     </div>
   </header>`;
@@ -182,11 +182,6 @@ function vitals() {
       <div class="bar"><div data-bar="mana"></div></div>
       ${canEdit ? `<div class="hp-tools"><button class="ghost" data-action="regen">Regenerate mana</button></div>` : ""}
     </div>
-    <div class="vital psi">
-      <div class="vital-head"><span>Psi Points</span></div>
-      <div class="pool">${inp("psi.current", { type: "number", cls: "big", label: "Current psi" })}<span class="of">/</span>${inp("psi.max", { type: "number", cls: "mid", label: "Max psi" })}</div>
-      <div class="bar"><div data-bar="psi"></div></div>
-    </div>
     <div class="stat-grid">
       <div class="stat">${inp("ac", { type: "number", cls: "stat-input", label: "Armor Class" })}<span>Armor Class</span></div>
       <button class="stat roll" data-roll="init"><b data-calc="init"></b><span>Initiative</span></button>
@@ -199,8 +194,8 @@ function vitals() {
 }
 
 const TABS = [
-  ["character", "Character"], ["skills", "Skills"], ["combat", "Combat"],
-  ["magic", "Magic & Psionics"], ["gear", "Gear & Story"], ["settings", "Sheet"],
+  ["character", "Character"], ["skills", "Skills"], ["combat", "Melee"],
+  ["magic", "Magic"], ["gear", "Gear & Story"], ["settings", "Sheet"],
 ];
 const tabsNav = () => `<nav class="tabs" role="tablist">${TABS.map(([id, label]) =>
   `<button role="tab" class="${tab === id ? "active" : ""}" aria-selected="${tab === id}" data-action="tab:${id}">${label}</button>`).join("")}</nav>`;
@@ -307,6 +302,10 @@ function tabCombat() {
         <button class="primary roll" data-roll="atk:${i}">Attack <b data-calc="atk.${i}"></b></button>
         <button class="roll" data-roll="dmg:${i}">Damage <b data-calc="dmg.${i}"></b></button>
         ${a.graze ? `<button class="roll" data-roll="graze:${i}">Graze <b data-calc="graze.${i}"></b></button>` : ""}
+        <span class="custom-roll" title="Any dice: crits, smites, extra damage… (press Enter to roll)">
+          ${inp(`attacks.${i}.custom`, { ph: "Custom: 2d8+4", label: "Custom damage roll" })}
+          <button class="roll" data-roll="custom:${i}">Roll</button>
+        </span>
       </div>
     </div>`).join("");
   return `
@@ -323,23 +322,31 @@ function noteAbility(note) {
   return hit ? hit.key : null;
 }
 
-function tabMagic() {
-  const spells = state.magic.spells.map((s, i) => ({ s, i })).sort((a, b) => num(a.s.level) - num(b.s.level) || a.i - b.i);
-  let lastLevel = null;
-  const spellHtml = spells.map(({ s, i }) => {
-    const lvl = SPELL_LEVELS[num(s.level)] || SPELL_LEVELS[0];
-    const heading = lastLevel !== lvl.level ? `<h4 class="level-head">${lvl.level === 0 ? "Cantrips" : `${lvl.label} level`}</h4>` : "";
-    lastLevel = lvl.level;
-    return `${heading}
-    <div class="card spell ${s.learned ? "" : "unlearned"}">
-      <div class="card-head">
-        ${inp(`magic.spells.${i}.name`, { cls: "card-title", ph: "Spell name", label: "Spell name" })}
-        <span class="spell-level"><span class="badge">${lvl.label}</span>
-          ${s.note || canEdit ? `<span class="spell-note ${noteAbility(s.note) ? "is-ability" : ""} ${s.note ? "" : "empty"}" title="${noteAbility(s.note) ? `Cast with ${ABILITIES.find((a) => a.key === noteAbility(s.note)).name}` : "Note"}">${inp(`magic.spells.${i}.note`, { cls: "note-input", ph: "Note", label: "Spell note" })}</span>` : ""}
-        </span>
-        ${chk(`magic.spells.${i}.learned`, "Learned")}
-        ${canEdit ? `<button class="x" data-action="del:magic.spells.${i}" title="Remove">✕</button>` : ""}
-      </div>
+function spellCard(s, i) {
+  const lvl = SPELL_LEVELS[num(s.level)] || SPELL_LEVELS[0];
+  const need = castsToLearn(s.level);
+  const learning = !s.learned && need > 0;
+  const castWith = noteAbility(s.note);
+  const summary = [s.castTime, s.range && `${s.range}${/^\d+$/.test(String(s.range)) ? " ft" : ""}`, s.damage && `${s.damage}${s.damageType ? ` ${s.damageType}` : ""}`, s.save && `${s.save} save`, s.duration, s.concentration && "Concentration"]
+    .filter(Boolean).map(esc).join(" · ");
+  const pips = learning ? `<div class="learn-progress" title="${num(s.casts)} of ${need} successful casts">
+      ${Array.from({ length: Math.min(need, 13) }, (_, k) => `<i class="${k < num(s.casts) ? "on" : ""}"></i>`).join("")}
+      <span>${num(s.casts)}/${need} casts to learn</span></div>` : "";
+  return `<div class="card spell ${learning ? "learning" : ""}">
+    <div class="card-head">
+      ${inp(`magic.spells.${i}.name`, { cls: "card-title", ph: "Spell name", label: "Spell name" })}
+      <span class="spell-level"><span class="badge">${lvl.label}</span>
+        ${s.note || canEdit ? `<span class="spell-note ${castWith ? "is-ability" : ""} ${s.note ? "" : "empty"}" title="${castWith ? `Cast with ${ABILITIES.find((a) => a.key === castWith).name}` : "Note"}">${inp(`magic.spells.${i}.note`, { cls: "note-input", ph: "Note", label: "Spell note" })}</span>` : ""}
+      </span>
+      ${canEdit ? `<button class="x" data-action="del:magic.spells.${i}" title="Remove">✕</button>` : ""}
+    </div>
+    ${summary ? `<p class="spell-summary">${summary}</p>` : ""}
+    ${pips}
+    <div class="roll-row">
+      <button class="primary roll" data-roll="cast:${i}">${learning ? "Practice cast" : "Cast"} <b>${num(s.mana)} mana</b>${num(s.dc) && num(s.level) ? ` <span class="cast-with">DC ${num(s.dc)}</span>` : ""}${castWith ? ` <span class="cast-with">${ABILITIES.find((a) => a.key === castWith).short}</span>` : ""}</button>
+      ${isDiceExpression(s.damage) ? `<button class="roll" data-roll="spelldmg:${i}">${/heal/i.test(s.damageType || "") ? "Heal" : "Damage"} <b>${esc(s.damage)}</b></button>` : ""}
+    </div>
+    <details class="spell-more"><summary>Details</summary>
       <div class="fields compact">
         ${field("Type / school", inp(`magic.spells.${i}.type`, { ph: "Evocation" }), "narrow")}
         ${field("Casting time", inp(`magic.spells.${i}.castTime`, { ph: "1 Action" }), "narrow")}
@@ -350,34 +357,39 @@ function tabMagic() {
         ${field("Mana cost", inp(`magic.spells.${i}.mana`, { type: "number" }), "narrow")}
         ${field("DC to cast", inp(`magic.spells.${i}.dc`, { type: "number" }), "narrow")}
         ${field("Duration", inp(`magic.spells.${i}.duration`, { ph: "Instantaneous" }), "narrow")}
-        ${field("Condition", inp(`magic.spells.${i}.condition`, { ph: "Burning" }), "narrow")}
+        ${field("Successful casts", inp(`magic.spells.${i}.casts`, { type: "number" }), "narrow")}
       </div>
-      <div class="card-flags">${chk(`magic.spells.${i}.amplifiable`, "Amplifiable")}${chk(`magic.spells.${i}.concentration`, "Concentration")}</div>
-      <div class="roll-row">
-        <button class="primary roll" data-roll="cast:${i}">Cast <b>${num(s.mana)} mana</b>${noteAbility(s.note) ? ` <span class="cast-with">${ABILITIES.find((a) => a.key === noteAbility(s.note)).short}</span>` : ""}</button>
-        ${isDiceExpression(s.damage) ? `<button class="roll" data-roll="spelldmg:${i}">Damage <b>${esc(s.damage)}</b></button>` : ""}
-      </div>
-    </div>`;
+      <div class="card-flags">${chk(`magic.spells.${i}.learned`, "Learned", "Known spells cast normally")}${chk(`magic.spells.${i}.concentration`, "Concentration")}${chk(`magic.spells.${i}.amplifiable`, "Amplifiable")}</div>
+    </details>
+  </div>`;
+}
+
+let libOpen = false;
+function tabMagic() {
+  const all = state.magic.spells.map((s, i) => ({ s, i })).sort((a, b) => num(a.s.level) - num(b.s.level) || String(a.s.name).localeCompare(String(b.s.name)));
+  const known = all.filter(({ s }) => s.learned || castsToLearn(s.level) === 0);
+  const learning = all.filter(({ s }) => !s.learned && castsToLearn(s.level) > 0);
+  let lastLevel = null;
+  const knownHtml = known.map(({ s, i }) => {
+    const lvl = SPELL_LEVELS[num(s.level)] || SPELL_LEVELS[0];
+    const heading = lastLevel !== lvl.level ? `<h4 class="level-head">${lvl.level === 0 ? "Cantrips" : `${lvl.label} level`}</h4>` : "";
+    lastLevel = lvl.level;
+    return heading + spellCard(s, i);
   }).join("");
 
-  const powers = state.psionics.map((p, i) => `
-    <div class="card power ${p.learned ? "" : "unlearned"}">
-      <div class="card-head">
-        ${inp(`psionics.${i}.name`, { cls: "card-title", ph: p.type || "Power name", label: "Power name" })}
-        ${chk(`psionics.${i}.learned`, "Learned")}
-        ${canEdit ? `<button class="x" data-action="del:psionics.${i}" title="Remove">✕</button>` : ""}
-      </div>
-      <div class="fields compact">
-        ${field("Type", inp(`psionics.${i}.type`, { ph: "Telekinetic" }), "narrow")}
-        ${field("Casting time", inp(`psionics.${i}.castTime`, { ph: "1 Action" }), "narrow")}
-        ${field("Range", inp(`psionics.${i}.range`, { ph: "60 ft" }), "narrow")}
-        ${field("Psi cost", inp(`psionics.${i}.cost`, { type: "number" }), "narrow")}
-        ${field("Damage", inp(`psionics.${i}.damage`, { ph: "1d10" }), "narrow")}
-        ${field("Duration", inp(`psionics.${i}.duration`, { ph: "Instantaneous" }), "narrow")}
-        ${field("Target save", inp(`psionics.${i}.save`, { ph: "Strength" }), "narrow")}
-      </div>
-      <div class="roll-row"><button class="primary roll" data-roll="psi:${i}">Use <b>${num(p.cost)} psi</b>${isDiceExpression(p.damage) ? ` · ${esc(p.damage)}` : ""}</button></div>
-    </div>`).join("");
+  // The rest of the Google Sheet's spell list, loaded live (not saved on the token).
+  const lib = (state.googleSheet?.id && getLibrary(state.googleSheet.id)) || [];
+  const have = new Set(state.magic.spells.map((sp) => `${sp.level}|${String(sp.name).toLowerCase()}`));
+  const libList = lib.filter((sp) => !have.has(`${sp.level}|${String(sp.name).toLowerCase()}`));
+  const libHtml = libList.length ? `<details class="panel spell-library" ${libOpen ? "open" : ""}>
+      <summary><h3>Spell library</h3><span class="muted small">${libList.length} spells on the Google Sheet you haven't started learning</span></summary>
+      <ul class="lib-list">${libList.map((sp, k) => `<li>
+        <span class="badge">${(SPELL_LEVELS[num(sp.level)] || SPELL_LEVELS[0]).label}</span>
+        <span class="lib-name">${esc(sp.name)}${sp.note ? ` <em>${esc(sp.note)}</em>` : ""}<small>${esc([sp.damage && `${sp.damage} ${sp.damageType || ""}`.trim(), `${num(sp.mana)} mana`, num(sp.dc) ? `DC ${num(sp.dc)}` : ""].filter(Boolean).join(" · "))}</small></span>
+        ${canEdit ? `<button class="small" data-action="learnlib:${k}" title="Add to Learning, so successful casts count toward learning it">Start learning</button>` : ""}
+      </li>`).join("")}</ul>
+    </details>` : "";
+  window.__libList = libList;
 
   return `
     <div class="panel">
@@ -388,13 +400,21 @@ function tabMagic() {
         <div class="field narrow"><span class="field-label">Spell save DC</span><span class="readout"><b data-calc="dc"></b></span></div>
         ${field("Extra DC bonus", inp("spellDCMisc", { type: "number", ph: "0" }), "narrow")}
         <div class="field narrow"><span class="field-label">Suggested regen</span><span class="readout" data-calc="regenhint"></span></div>
+        ${field("Extra to-hit bonus", inp("spellHitMisc", { type: "number", ph: "0" }), "narrow")}
       </div>
-      <p class="muted small">Spell save DC = 8 + proficiency + casting modifier. Casting a spell = 1d20 + casting modifier + proficiency, against the spell's DC to cast. Mana is spent ${HOUSE_RULES.manaSpentOnFailedCast ? "whether or not the cast succeeds" : "only when the cast succeeds"}.</p>
+      <div class="spell-hit-row">
+        <button class="primary roll" data-roll="spellhit" title="d20 + casting modifier + proficiency (+ any extra to-hit bonus)">✦ Roll to hit <b data-calc="spellhit"></b></button>
+        <button class="roll" data-roll="spellhit:adv">Advantage</button>
+        <button class="roll" data-roll="spellhit:dis">Disadvantage</button>
+      </div>
+      <p class="muted small">Cast = d20 + casting modifier + proficiency against the spell's DC; mana is spent on a success. A spell of level N is learned after N successful casts, and cantrips are known automatically.</p>
       ${canEdit ? `<div class="add-row"><span class="muted small">Add a spell:</span>${SPELL_LEVELS.map((l) => `<button class="add chip" data-action="addspell:${l.level}">${l.label}</button>`).join("")}</div>` : ""}
     </div>
-    ${spellHtml ? `<div class="cards">${spellHtml}</div>` : `<p class="empty">No spells yet.</p>`}
-    <div class="panel-head bare"><h3>Psionics</h3>${canEdit ? `<button class="add" data-action="addpower">+ Add power</button>` : ""}</div>
-    ${powers ? `<div class="cards">${powers}</div>` : `<p class="empty">No psionic powers yet.</p>`}`;
+    <div class="panel-head bare"><h3>Known spells</h3><span class="muted small">${known.length}</span></div>
+    ${knownHtml ? `<div class="cards">${knownHtml}</div>` : `<p class="empty">No known spells yet.</p>`}
+    ${learning.length ? `<div class="panel-head bare"><h3>Learning</h3><span class="muted small">Practice casts count toward learning</span></div>
+      <div class="cards">${learning.map(({ s, i }) => spellCard(s, i)).join("")}</div>` : ""}
+    ${libHtml}`;
 }
 
 function tabGear() {
@@ -435,6 +455,13 @@ function tabSettings() {
   return `
     <div class="grid-2">
       ${googlePanel()}
+      <div class="panel">
+        <div class="panel-head"><h3>Party</h3></div>
+        ${inParty(state)
+          ? `<p class="small">✓ <b>In the campaign party.</b> This character is saved with the room, so it carries over to new scenes. Drop a token with the same picture or name on any map and this sheet attaches by itself.</p>`
+          : `<p class="muted small">Not in the campaign party. The GM can tick <b>Campaign party</b> at the top of the sheet to save it with the room so it follows you between scenes. Sheets with an owner join automatically.</p>`}
+        ${isGM ? `<button class="small" data-action="joinparty">${inParty(state) ? "Take out of the campaign party" : "Add to the campaign party"}</button>` : ""}
+      </div>
       ${isGM ? `<div class="panel">
         <div class="panel-head"><h3>Who can edit</h3></div>
         ${field("Owner", sel("ownerId", ownerOpts))}
@@ -486,7 +513,7 @@ function googlePanel() {
     ${missing}
     ${(g.warnings || []).map((w) => `<p class="small muted">ℹ ${esc(w)}</p>`).join("")}
     ${chk("googleSheet.auto", "Keep syncing automatically (about once a minute while the GM is in the room)")}
-    <p class="muted small">Edit stats in the Google Sheet; changes made here to synced fields get replaced on the next sync. Current HP, mana and psi used in play stay here, unless the Google Sheet's own Current HP or Mana Used changes.</p>
+    <p class="muted small">Edit stats in the Google Sheet; changes made here to synced fields get replaced on the next sync. Current HP and mana used in play stay here, unless the Google Sheet's own Current HP or Mana Used changes.</p>
   </div>`;
 }
 
@@ -553,12 +580,30 @@ async function saveNow() {
 
 function commit() { render(); scheduleSave(); }
 
+// GM: put this character in (or take it out of) the campaign party.
+async function setCampaignParty(on) {
+  if (on) {
+    delete state.noParty;
+    state.partyId = state.partyId || `pc-${Math.random().toString(36).slice(2, 9)}`;
+    commit();
+    toast("In the campaign party. It's saved with the room and follows you to every scene.", "good");
+  } else {
+    const pid = state.partyId;
+    delete state.partyId;
+    state.noParty = true;
+    commit();
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.6"); await removeMember(pid); }
+    toast("Taken out of the campaign party.");
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Editing
 // ---------------------------------------------------------------------------
 function onEdit(e) {
   const el = e.target;
   if (el.dataset?.local === "private") { privateRolls = el.checked; return; }
+  if (el.dataset?.local === "campaign") { if (e.type === "change") setCampaignParty(el.checked); return; }
   if (!el.dataset?.path || !canEdit) return;
   let v;
   if (el.type === "checkbox") v = el.checked;
@@ -571,6 +616,10 @@ function onEdit(e) {
   scheduleSave();
 }
 app.addEventListener("input", onEdit);
+app.addEventListener("keydown", (e) => {
+  const p = e.target.dataset?.path;
+  if (e.key === "Enter" && p && /^attacks\.\d+\.custom$/.test(p)) { e.preventDefault(); doRoll(`custom:${p.split(".")[1]}`); }
+});
 app.addEventListener("change", onEdit);
 
 app.addEventListener("focusout", () => {
@@ -598,10 +647,9 @@ app.addEventListener("click", async (e) => {
     case "addattack": state.attacks.push({ name: "", range: "5 ft", ability: "str", damage: "1d8", damageType: "", proficient: true, equipped: true, graze: false, bonus: 0, notes: "" }); commit(); break;
     case "addspell": {
       const lvl = SPELL_LEVELS[num(arg)];
-      state.magic.spells.push({ level: lvl.level, name: "", note: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
+      state.magic.spells.push({ level: lvl.level, casts: 0, local: true, name: "", note: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
       commit(); break;
     }
-    case "addpower": state.psionics.push({ name: "", type: "", castTime: "1 Action", range: "", cost: 1, damage: "", duration: "Instantaneous", save: "", learned: true }); commit(); break;
     case "additem": state.equipment.push({ name: "", qty: 1, notes: "" }); commit(); focusLast('[data-path^="equipment."][data-path$=".name"]'); break;
     case "del": {
       const parts = arg.split(".");
@@ -640,12 +688,21 @@ app.addEventListener("click", async (e) => {
     }
     case "longrest":
       state.hp.current = num(state.hp.max); state.hp.temp = 0;
-      state.mana.current = num(state.mana.max); state.psi.current = num(state.psi.max);
+      state.mana.current = num(state.mana.max);
       state.combat.forEach((s) => { s.done = false; });
-      toast("Long rest taken: HP, mana and psi restored.", "good");
+      toast("Long rest taken: HP and mana restored.", "good");
       commit(); break;
     case "export": showExport(); break;
+    case "joinparty": setCampaignParty(!inParty(state)); break;
     case "gsync": syncNow(false); break;
+    case "learnlib": {
+      const sp = (window.__libList || [])[Number(arg)];
+      if (!sp) break;
+      libOpen = true;
+      state.magic.spells.push({ ...sp, casts: 0, learned: false, local: true });
+      toast(`${esc(sp.name)} added to Learning. ${castsToLearn(sp.level)} successful cast${castsToLearn(sp.level) === 1 ? "" : "s"} to learn it.`, "good");
+      commit(); break;
+    }
     case "glink": {
       const url = document.getElementById("gs-url")?.value.trim();
       const id = sheetIdFromUrl(url);
@@ -681,6 +738,12 @@ function doRoll(what) {
   switch (kind) {
     case "init": rollCheck("Initiative", d.initiative); break;
     case "will": rollCheck("Will Check", d.will); break;
+    case "spellhit": {
+      const ab = ABILITIES.find((a) => a.key === (state.magic.ability || "cha"));
+      const opt = key === "adv" ? { advantage: true } : key === "dis" ? { disadvantage: true } : {};
+      send(`Spell attack — to hit (${ab?.short || ""})${key === "adv" ? " (adv)" : key === "dis" ? " (dis)" : ""}`, roll(d20(d.castMod + num(state.spellHitMisc)), opt));
+      break;
+    }
     case "willsave": rollCheck("Will save", d.willSave); break;
     case "ability": rollCheck(`${ABILITIES.find((a) => a.key === key).name} check`, d.mods[key]); break;
     case "save": rollCheck(`${ABILITIES.find((a) => a.key === key).name} save`, d.saves[key]); break;
@@ -696,7 +759,15 @@ function doRoll(what) {
     }
     case "dmg": {
       const a = state.attacks[idx];
-      send(`${a.name || "Attack"} — damage${a.damageType ? ` (${a.damageType})` : ""}`, roll(plus(a.damage || "0", d.mods[a.ability || "str"])));
+      send(`${a.name || "Attack"} — damage${a.damageType ? ` (${a.damageType})` : ""}`, roll(a.flat ? (a.damage || "0") : plus(a.damage || "0", d.mods[a.ability || "str"])));
+      break;
+    }
+    case "custom": {
+      const a = state.attacks[idx];
+      const box = app.querySelector(`[data-path="attacks.${idx}.custom"]`);
+      const expr = String(box?.value ?? a.custom ?? "").trim();
+      if (!expr || !isDiceExpression(expr)) { toast("Type a roll first, like 2d8+4.", "bad"); break; }
+      send(`${a.name || "Attack"} — custom damage${a.damageType ? ` (${a.damageType})` : ""}`, roll(expr));
       break;
     }
     case "graze": {
@@ -711,7 +782,6 @@ function doRoll(what) {
       send(`${s.name || "Spell"} — damage${s.damageType ? ` (${s.damageType})` : ""}`, roll(s.damage));
       break;
     }
-    case "psi": usePower(idx); break;
   }
 }
 
@@ -733,24 +803,19 @@ function castSpell(i, d) {
   const castMod = castWith ? d.mods[castWith] + d.pb : d.castMod;
   const r = roll(d20(castMod));
   const ok = r.total >= dc;
-  send(`Cast ${name}${castWith ? ` with ${ABILITIES.find((a) => a.key === castWith).short}` : ""} (DC ${dc})`, r, { outcome: ok ? "Success" : "Failed" });
+  send(`${!s.learned && castsToLearn(s.level) > 0 ? "Practice cast" : "Cast"} ${name}${castWith ? ` with ${ABILITIES.find((a) => a.key === castWith).short}` : ""} (DC ${dc})`, r, { outcome: ok ? "Success" : "Failed" });
   if (ok || HOUSE_RULES.manaSpentOnFailedCast) state.mana.current = num(state.mana.current) - cost;
+  // Learning: each successful cast of a spell you don't know yet counts.
+  const need = castsToLearn(s.level);
+  if (ok && !s.learned && need > 0) {
+    s.casts = num(s.casts) + 1;
+    if (s.casts >= need) { s.learned = true; setTimeout(() => toast(`✦ <b>${esc(name)}</b> learned!`, "good"), 900); }
+    else setTimeout(() => toast(`${esc(name)}: ${s.casts}/${need} successful casts toward learning.`), 900);
+  }
   if (ok && isDiceExpression(s.damage)) setTimeout(() => send(`${name} — damage${s.damageType ? ` (${s.damageType})` : ""}`, roll(s.damage)), 350);
   commit();
 }
 
-function usePower(i) {
-  const p = state.psionics[i];
-  const cost = num(p.cost), name = p.name || p.type || "a psionic power";
-  if (cost > num(state.psi.current)) {
-    toast(`Not enough psi for ${esc(name)}: needs ${cost}, you have ${num(state.psi.current)}.`, "bad");
-    return;
-  }
-  state.psi.current = num(state.psi.current) - cost;
-  if (isDiceExpression(p.damage)) send(`${name}${p.save ? ` (${p.save} save)` : ""}`, roll(p.damage));
-  else send(`Uses ${name}`, { total: `−${cost} psi`, detail: p.save ? `Target makes a ${p.save} save` : "No dice" });
-  commit();
-}
 
 // ---------------------------------------------------------------------------
 // Import / export

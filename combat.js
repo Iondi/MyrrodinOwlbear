@@ -4,9 +4,9 @@
 //  sees the same order. The GM's computer makes the changes; players ask
 //  to join by sending a message, and the GM's side adds them.
 // =====================================================================
-import { OBR, NS, inOBR, listSheets, broadcastRoll } from "./bridge.js?v=1.7.0";
-import { derive, normalize } from "./rules.js?v=1.7.0";
-import { roll, d20 } from "./dice.js?v=1.7.0";
+import { OBR, NS, inOBR, listSheets, saveSheet, broadcastRoll } from "./bridge.js?v=1.9.6";
+import { derive, normalize } from "./rules.js?v=1.9.6";
+import { roll, d20 } from "./dice.js?v=1.9.6";
 
 export const COMBAT_KEY = `${NS}/combat`;
 export const JOIN_CHANNEL = `${NS}/combat-join`;
@@ -183,4 +183,26 @@ export async function rollFor(entryId) {
   if (!found) return;
   const r = rollInitiative(found.sheet);
   await applyJoin({ id: entryId, name: normalize(found.sheet).name, init: r.init, dex: r.dex, detail: `${r.detail} (rolled by GM)` });
+}
+
+
+// ---- Mana at the start of a turn ----------------------------------------------
+// Casters start each of their turns by re-rolling mana regen.
+export const turnKey = (st) => (st?.active && st.currentId ? `${st.id}:${st.round}:${st.currentId}` : "");
+export const hasMana = (sheet) => Number(sheet?.mana?.max) > 0;
+
+export async function regenMana(itemId, st, who = "") {
+  const all = await listSheets();
+  const found = all.find((x) => x.id === itemId);
+  if (!found) return null;
+  const c = normalize(found.sheet);
+  const r = roll(c.mana.regen || "0");
+  const before = Number(c.mana.current) || 0;
+  c.mana.current = Math.min(Number(c.mana.max) || 0, before + (Number(r.total) || 0));
+  c.manaTurn = turnKey(st);
+  await saveSheet(itemId, c);
+  const event = { character: c.name, player: who, label: "Mana regen (start of turn)", total: r.total, detail: `${r.detail} · mana ${before} → ${c.mana.current}`, crit: false, fumble: false, hidden: false };
+  if (r.dice?.length) event.dice = r.dice;
+  broadcastRoll(event).catch(() => {});
+  return { gained: c.mana.current - before, now: c.mana.current, max: c.mana.max, total: r.total };
 }

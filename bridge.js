@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR from "../vendor/obr-sdk.js?v=1.7.0";
+import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.9.6";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -21,13 +21,17 @@ export const markSheetOpen = () => { try { localStorage.setItem("myrrodin-sheet-
 export const HUD_MODAL = `${NS}/hud-modal`;
 export const hudOn = () => pref("myrrodin-hud", "on") !== "off";
 export const setHudOn = (on) => { try { localStorage.setItem("myrrodin-hud", on ? "on" : "off"); } catch { /* ignore */ } };
-export const hudCorner = () => pref("myrrodin-hud-corner", "tr");
+export const hudCorner = () => pref("myrrodin-hud-corner", "br");
 export const setHudCorner = (c) => { try { localStorage.setItem("myrrodin-hud-corner", c); } catch { /* ignore */ } };
+export const partyFramesOn = () => pref("myrrodin-party-frames", "on") !== "off";
+export const setPartyFramesOn = (on) => { try { localStorage.setItem("myrrodin-party-frames", on ? "on" : "off"); } catch { /* ignore */ } };
+export const partyCorner = () => pref("myrrodin-party-corner", "tl");
+export const setPartyCorner = (c) => { try { localStorage.setItem("myrrodin-party-corner", c); } catch { /* ignore */ } };
 export const menuTab = () => pref("myrrodin-menu-tab", "party");
 export const setMenuTab = (t) => { try { localStorage.setItem("myrrodin-menu-tab", t); } catch { /* ignore */ } };
 export const sheetRecentlyOpen = () => Date.now() - Number(pref("myrrodin-sheet-open", "0")) < 4000;
 export const inOBR = OBR.isAvailable;
-export { OBR };
+export { OBR, buildImage };
 
 // Full URL of a file in this extension (works on GitHub Pages sub-folders).
 export const asset = (path) => new URL(`../${path}`, import.meta.url).href;

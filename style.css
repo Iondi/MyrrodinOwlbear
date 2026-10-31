@@ -101,6 +101,8 @@ button.primary b { color: #fff3d6; }
 .chk input:checked::after { content: ""; width: 4px; height: 8px; border: solid #1b1622; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
 .chk input:disabled { background: var(--sunken); border-color: var(--line); }
 .chk input:disabled:checked { background: var(--gold); }
+.chk.campaign { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.chk.campaign.on { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
 
 .badge, .pill { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); border: 1px solid #d8b46a40; white-space: nowrap; }
 .pill b { color: var(--text); }
@@ -129,7 +131,7 @@ button.primary b { color: #fff3d6; }
 .save-state { font-size: 11px; color: var(--faint); min-width: 54px; text-align: right; }
 .save-state.bad { color: var(--bad); font-weight: 700; }
 
-.vitals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.35fr); gap: 10px; padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.vitals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.5fr); gap: 10px; padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .vital { background: var(--raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 9px 11px; display: grid; gap: 6px; align-content: start; }
 .vital-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .vital.hp .vital-head > span:first-child { color: var(--hp); }
@@ -313,7 +315,7 @@ button.stat:hover b { color: var(--gold); }
 
 /* ---------- narrow windows (phones, small modals) ---------- */
 @media (max-width: 760px) {
-  .vitals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat-grid { grid-column: 1 / -1; grid-template-columns: repeat(6, 1fr); }
   .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -375,7 +377,11 @@ button.stat:hover b { color: var(--gold); }
 .version-tag { text-align: center; font-size: 10px; color: var(--faint); margin: 0 0 12px; letter-spacing: .06em; }
 
 /* ---------- Myr'rodin menu (tabs) ---------- */
-.party-page { min-height: 100vh; }
+html:has(body.party-page) { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #d8b46a66 transparent; }
+.party-page { min-height: 100vh; overflow: visible; }
+html:has(body.party-page)::-webkit-scrollbar { width: 8px; }
+html:has(body.party-page)::-webkit-scrollbar-thumb { background: #d8b46a55; border-radius: 8px; }
+html:has(body.party-page)::-webkit-scrollbar-thumb:hover { background: #d8b46a99; }
 .menu-tabs { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-bottom: 1px solid var(--line); }
 .menu-tabs button { position: relative; background: none; border: none; border-radius: 0; padding: 10px 4px 9px; justify-content: center; color: var(--muted); font-size: 13px; border-bottom: 2px solid transparent; }
 .menu-tabs button:hover { background: none; color: var(--text); }
@@ -415,3 +421,43 @@ button.stat:hover b { color: var(--gold); }
 .inv-coins label span, .coin-ro span { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
 .inv-coins input { text-align: center; padding: 4px 2px; }
 .coin-ro b { font-size: 15px; color: var(--gold); }
+.pf-settings { margin: 12px; }
+
+/* Party roster */
+.party-list { display: grid; gap: 10px; }
+#party { display: grid; gap: 10px; }
+.member.offmap { border-style: dashed; opacity: .85; }
+.member-open:disabled { cursor: default; opacity: 1; }
+.offmap-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.offmap-row > span:last-child { display: flex; gap: 4px; align-items: center; }
+.chip-off { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 7px; border: 1px dashed var(--line-strong); border-radius: 999px; }
+.place-all { width: 100%; justify-content: center; }
+.section-h { margin: 6px 2px 0; }
+.storage-note { text-align: center; margin: 2px 0 0; }
+
+/* Spells: compact cards, learning progress, library */
+.spell-summary { margin: -2px 0 0; font-size: 12px; color: var(--muted); }
+.card.spell.learning { border-top-color: var(--gold); }
+.learn-progress { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.learn-progress i { width: 14px; height: 6px; border-radius: 3px; background: var(--sunken); border: 1px solid var(--line-strong); }
+.learn-progress i.on { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px #d8b46a66; }
+.learn-progress span { font-size: 11px; color: var(--gold); margin-left: 4px; font-weight: 600; }
+.spell-more summary { cursor: pointer; font-size: 12px; color: var(--faint); list-style: none; }
+.spell-more summary::before { content: "▸ "; }
+.spell-more[open] summary::before { content: "▾ "; }
+.spell-more[open] summary { margin-bottom: 8px; }
+.spell-library summary { cursor: pointer; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; list-style: none; }
+.spell-library summary::before { content: "▸"; color: var(--gold); }
+.spell-library[open] summary::before { content: "▾"; }
+.lib-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 420px; overflow-y: auto; }
+.lib-list li { display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center; padding: 5px 6px; border-radius: 8px; }
+.lib-list li:hover { background: var(--raised); }
+.lib-list .badge { justify-self: start; }
+.lib-name { display: grid; font-size: 13px; }
+.lib-name em { font-style: normal; color: var(--mana); font-size: 11px; }
+.lib-name small { color: var(--muted); font-size: 11px; }
+.spell-hit-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
+.spell-hit-row .primary b { margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: #0003; }
+.custom-roll { display: inline-flex; align-items: stretch; flex: 1 1 170px; min-width: 150px; }
+.custom-roll input { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.custom-roll button { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }

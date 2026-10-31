@@ -1,5 +1,4 @@
 /* Initiative tracker — the window on the right during combat */
-html, body.tracker-page { background: transparent; height: auto; overflow: hidden; }
 .trk {
   margin: 3px; border-radius: 14px; overflow: hidden;
   background:
@@ -35,6 +34,14 @@ html, body.tracker-page { background: transparent; height: auto; overflow: hidde
   font-family: var(--display); font-weight: 700; letter-spacing: .1em; color: #2a1238;
   background: linear-gradient(90deg, #d8a84a, #ffe7a8, #d8a84a); box-shadow: 0 0 22px rgba(255, 214, 120, .45);
 }
+
+.trk-mana {
+  margin: 8px 10px 0; padding: 8px 10px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  background: #4a8fe022; border: 1px solid #4a8fe066; color: var(--text); font-size: 13px;
+}
+.trk-mana button { background: linear-gradient(180deg, #5b9cf0, #3c6fc0); border-color: #3c6fc0; }
+.trk-mana button small { opacity: .75; font-weight: 500; margin-left: 4px; }
+.trk-mana.done { background: transparent; border-style: dashed; border-color: var(--line); color: var(--muted); font-size: 12px; }
 
 .trk-list { list-style: none; margin: 0; padding: 8px; display: grid; gap: 5px; }
 .trk-row {

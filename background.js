@@ -1,11 +1,12 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, setMenuTab } from "./bridge.js?v=1.7.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.7.0";
-import * as Combat from "./combat.js?v=1.7.0";
-import * as Stash from "./stash.js?v=1.7.0";
-import { normalize } from "./rules.js?v=1.7.0";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, partyFramesOn, setMenuTab } from "./bridge.js?v=1.9.6";
+import { syncFromGoogle } from "./gsheet.js?v=1.9.6";
+import * as Combat from "./combat.js?v=1.9.6";
+import * as Stash from "./stash.js?v=1.9.6";
+import * as Roster from "./roster.js?v=1.9.6";
+import { normalize } from "./rules.js?v=1.9.6";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -72,7 +73,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.7.0"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.9.6"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -92,13 +93,14 @@ function watchCombat(self) {
   let lastTurn = null;
   let hudOpen = false;
 
-  // The turn-order strip: a click-through layer, only while a fight is on.
+  // The on-screen frames: a click-through layer that's open while the party
+  // frames are switched on, or while a fight is on.
   const syncHud = async (st) => {
-    const want = !!st?.active && hudOn();
+    const want = partyFramesOn() || (!!st?.active && hudOn());
     if (want && !hudOpen) {
       hudOpen = true;
       await OBR.modal.open({
-        id: HUD_MODAL, url: asset("hud.html?v=1.7.0"),
+        id: HUD_MODAL, url: asset("hud.html?v=1.9.6"),
         fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
       }).catch(() => { hudOpen = false; });
     } else if (!want && hudOpen) {
@@ -107,7 +109,7 @@ function watchCombat(self) {
     }
   };
   let current = null;
-  window.addEventListener("storage", (e) => { if (e.key === "myrrodin-hud") syncHud(current); });
+  window.addEventListener("storage", (e) => { if (e.key === "myrrodin-hud" || e.key === "myrrodin-party-frames") syncHud(current); });
 
   const onState = async (st) => {
     current = st;
@@ -129,18 +131,49 @@ function watchCombat(self) {
       const e = (st.entries || []).find((x) => x.id === st.currentId);
       if (!e) return;
       const mine = e.owner && e.owner === self.id;
-      OBR.notification.show(mine ? `✦ Round ${st.round}: your turn, ${e.name}!` : `⚔ Round ${st.round}: ${e.name}'s turn`, mine ? "SUCCESS" : "DEFAULT");
+      // Casters start their turn by re-rolling mana: remind whoever runs that sheet.
+      let caster = false;
+      try { const [it] = await OBR.scene.items.getItems([e.id]); caster = Combat.hasMana(it?.metadata?.[KEY]); } catch { /* ignore */ }
+      const runsIt = mine || (self.role === "GM" && !e.owner);
+      if (caster && runsIt) {
+        OBR.notification.show(mine ? `✦ Round ${st.round}: your turn, ${e.name}! Start by re-rolling your mana (Myr'rodin menu → Combat).` : `⚔ Round ${st.round}: ${e.name}'s turn. Start by re-rolling its mana.`, "SUCCESS");
+        setMenuTab("combat");
+      } else {
+        OBR.notification.show(mine ? `✦ Round ${st.round}: your turn, ${e.name}!` : `⚔ Round ${st.round}: ${e.name}'s turn`, mine ? "SUCCESS" : "DEFAULT");
+      }
     }
   };
   Combat.getCombat().then(onState).catch(() => {});
   Combat.onCombatChange(onState);
   OBR.scene.onReadyChange((ready) => { if (ready) Combat.getCombat().then(onState).catch(() => {}); else { current = null; syncHud(null); } });
+  syncHud(null);
 
   // Only the GM's computer writes the fight and the stash; players' requests arrive here.
   if (self.role === "GM") {
     OBR.broadcast.onMessage(Combat.JOIN_CHANNEL, (e) => { Combat.applyJoin(e.data).catch(() => {}); });
     OBR.broadcast.onMessage(Stash.STASH_CHANNEL, (e) => { Stash.handle(e.data).catch(() => {}); });
   }
+}
+
+// ---- The party roster: saved with the room, so new scenes keep the party ----
+function startRoster() {
+  let timer = null;
+  let running = false;
+  const run = async () => {
+    if (running) { timer = setTimeout(run, 1500); return; }
+    running = true;
+    try {
+      if (await OBR.scene.isReady()) {
+        await Roster.autoAttach((c) => syncFromGoogle(c));
+        await Roster.mirrorFromScene();
+      }
+    } catch (err) { console.warn("[Myr'rodin] party roster", err); }
+    running = false;
+  };
+  const soon = () => { clearTimeout(timer); timer = setTimeout(run, 2000); };
+  OBR.scene.onReadyChange((ready) => { if (ready) setTimeout(run, 800); });
+  OBR.scene.items.onChange(soon);
+  setTimeout(run, 1500);
 }
 
 function startGoogleSync() {
@@ -195,7 +228,7 @@ OBR.onReady(async () => {
   const self = await me();
 
   // ---- Google Sheets auto-sync (runs only on the GM's computer) ----
-  if (self.role === "GM") { startGoogleSync(); startNameFollow(); }
+  if (self.role === "GM") { startGoogleSync(); startNameFollow(); startRoster(); }
 
   OBR.broadcast.onMessage(ROLL_CHANNEL, (event) => {
     const r = event.data || {};
