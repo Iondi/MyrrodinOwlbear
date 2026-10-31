@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.8.0";
+import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.9.0";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;

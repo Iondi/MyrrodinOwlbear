@@ -1,11 +1,11 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.8.0";
-import { normalize } from "./rules.js?v=1.8.0";
-import { roll } from "./dice.js?v=1.8.0";
-import * as Combat from "./combat.js?v=1.8.0";
-import { mountCombat } from "./tracker.js?v=1.8.0";
-import { mountInventory } from "./inventory.js?v=1.8.0";
-import * as Roster from "./roster.js?v=1.8.0";
+import * as B from "./bridge.js?v=1.9.0";
+import { normalize } from "./rules.js?v=1.9.0";
+import { roll } from "./dice.js?v=1.9.0";
+import * as Combat from "./combat.js?v=1.9.0";
+import { mountCombat } from "./tracker.js?v=1.9.0";
+import { mountInventory } from "./inventory.js?v=1.9.0";
+import * as Roster from "./roster.js?v=1.9.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -35,7 +35,6 @@ function memberCard({ id, image, c, onMap, memberId }) {
     </button>
     ${bar("hp", hp, max, "HP")}${c.hp.temp ? `<span class="temp">+${num(c.hp.temp)} temp</span>` : ""}
     ${bar("mana", num(c.mana.current), num(c.mana.max), "Mana")}
-    ${bar("psi", num(c.psi.current), num(c.psi.max), "Psi")}
     ${!onMap ? `<div class="offmap-row"><span class="chip-off">Not on this map</span>
         ${isGM && memberId ? `<span><button class="small" data-place="${esc(memberId)}">Place on map</button>
         <button class="link small danger-text" data-unparty="${esc(memberId)}">${removeArmed === memberId ? "Click again to remove" : "Remove from party"}</button></span>` : ""}</div>` : ""}
@@ -224,7 +223,7 @@ function renderPfSettings() {
   const on = B.partyFramesOn(), corner = B.partyCorner();
   box.innerHTML = `<label class="chk"><input type="checkbox" id="pf-toggle" ${on ? "checked" : ""}/><span>Show party frames on my screen</span></label>
     <div class="hud-corners" ${on ? "" : "hidden"}>${PF_CORNERS.map(([k, l]) => `<button class="chip-btn ${corner === k ? "on" : ""}" data-pf="${k}">${l}</button>`).join("")}</div>
-    <p class="muted small">Everyone's HP, mana and psi, always on screen. Clicks pass through it to the map. Characters show up once their sheet has an owner.</p>`;
+    <p class="muted small">Everyone's HP, mana and AC, always on screen. Clicks pass through it to the map. Characters show up once their sheet has an owner.</p>`;
   box.querySelector("#pf-toggle").addEventListener("change", (e) => { B.setPartyFramesOn(e.target.checked); renderPfSettings(); });
   box.querySelectorAll("[data-pf]").forEach((b) => b.addEventListener("click", () => { B.setPartyCorner(b.dataset.pf); renderPfSettings(); }));
 }

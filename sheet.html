@@ -7,18 +7,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=1.8.0" />
-  <link rel="stylesheet" href="css/dice.css?v=1.8.0" />
+  <link rel="stylesheet" href="css/style.css?v=1.9.0" />
+  <link rel="stylesheet" href="css/dice.css?v=1.9.0" />
 </head>
 <body class="sheet-page">
   <div id="app"><div class="loading">Opening the tome…</div></div>
   <div id="toasts" aria-live="polite"></div>
-  <script type="module" src="js/sheet.js?v=1.8.0"></script>
+  <script type="module" src="js/sheet.js?v=1.9.0"></script>
   <script>
   // If GitHub has a newer version than this page, reload this page fresh
   // (the extension code above starts right away; this only checks for updates).
   (function () {
-    var V = "1.8.0";
+    var V = "1.9.0";
     fetch("manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) {
       var q = new URLSearchParams(location.search);
       if (m.version && m.version !== V && q.get("fresh") !== m.version) { q.set("fresh", m.version); location.replace(location.pathname + "?" + q.toString() + location.hash); }

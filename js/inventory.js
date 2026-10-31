@@ -1,8 +1,8 @@
 // The Inventory tab: a character's gear and coins, and the shared party stash.
 // Players see their own characters; the GM can pick anyone's.
-import * as B from "./bridge.js?v=1.8.0";
-import * as S from "./stash.js?v=1.8.0";
-import { normalize } from "./rules.js?v=1.8.0";
+import * as B from "./bridge.js?v=1.9.0";
+import * as S from "./stash.js?v=1.9.0";
+import { normalize } from "./rules.js?v=1.9.0";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const num = (v) => Number(v) || 0;

@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.8.0";
-import * as C from "./combat.js?v=1.8.0";
-import { normalize } from "./rules.js?v=1.8.0";
-import * as Roster from "./roster.js?v=1.8.0";
+import * as B from "./bridge.js?v=1.9.0";
+import * as C from "./combat.js?v=1.9.0";
+import { normalize } from "./rules.js?v=1.9.0";
+import * as Roster from "./roster.js?v=1.9.0";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -77,7 +77,6 @@ function partyFrames() {
           <span class="pf-name">${esc(c.name)}${c.hp.temp ? `<small>+${num(c.hp.temp)}</small>` : ""}${down ? "<small class='ko'>down</small>" : ""}</span>
           ${bar("hp", hp, max)}
           ${bar("mana", num(c.mana.current), num(c.mana.max))}
-          ${bar("psi", num(c.psi.current), num(c.psi.max))}
         </span>
         <span class="pf-ac">${num(c.ac)}<small>AC</small></span>
       </li>`;

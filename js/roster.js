@@ -12,9 +12,9 @@
 //  and Google-linked characters only store the link (the sheet reloads
 //  from Google).
 // =====================================================================
-import { OBR, NS, KEY, inOBR, listSheets, saveSheet, tokenLabel, buildImage } from "./bridge.js?v=1.8.0";
-import { normalize } from "./rules.js?v=1.8.0";
-import { deflateSync, inflateSync, strToU8, strFromU8 } from "../vendor/fflate.js?v=1.8.0";
+import { OBR, NS, KEY, inOBR, listSheets, saveSheet, tokenLabel, buildImage } from "./bridge.js?v=1.9.0";
+import { normalize } from "./rules.js?v=1.9.0";
+import { deflateSync, inflateSync, strToU8, strFromU8 } from "../vendor/fflate.js?v=1.9.0";
 
 export const ROSTER_KEY = `${NS}/party`;
 const PREVIEW_KEY = "myrrodin-preview-party";
@@ -34,7 +34,7 @@ function memberFrom(id, sheet, item, old = {}) {
     id,
     ownerId: c.ownerId || "",
     name: c.name,
-    play: { hp: num(c.hp.current), max: num(c.hp.max), temp: num(c.hp.temp), mana: num(c.mana.current), manaMax: num(c.mana.max), psi: num(c.psi.current), psiMax: num(c.psi.max), ac: num(c.ac) },
+    play: { hp: num(c.hp.current), max: num(c.hp.max), temp: num(c.hp.temp), mana: num(c.mana.current), manaMax: num(c.mana.max), ac: num(c.ac) },
     // Remember the token's look so it can be placed again on a new map.
     token: item?.image ? { image: item.image, grid: item.grid, scale: item.scale, label: (item.text?.plainText || "").trim() || c.name } : old.token || null,
   };
@@ -54,7 +54,6 @@ export function sheetFor(m) {
   const p = m.play || {};
   if (p.max) { c.hp.max = c.hp.max || p.max; c.hp.current = p.hp; c.hp.temp = p.temp || 0; }
   if (p.manaMax) c.mana.current = Math.min(p.mana, c.mana.max || p.manaMax);
-  if (p.psiMax) c.psi.current = Math.min(p.psi, c.psi.max || p.psiMax);
   if (!c.ac && p.ac) c.ac = p.ac;
   return c;
 }

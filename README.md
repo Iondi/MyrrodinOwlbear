@@ -3,11 +3,11 @@
 Character sheets for the Myr'rodin homebrew, saved right on each token.
 
 - **Right-click a character token → Create / Open Myr'rodin Sheet**
-- Stats, the five proficiency tiers (Inept → Master), the 30 Myr'rodin skills, HP, AC, mana, psi, spells, psionics, weapons with graze, inventory and story notes
+- Stats, the proficiency tiers (Inept → Master), the 30 Myr'rodin skills, HP, AC, mana, **Melee** and **Magic**, weapons with graze, inventory and story notes
 - The **Super Awesome Fast Combat Helper**: your turn order as a checklist, with a "New turn" reset
 - Click any number to roll it. Everyone in the room sees the roll (tick **Private rolls** to show only you and the GM)
 - **Cast** rolls d20 + casting modifier + proficiency against the spell's DC to Cast and takes the mana for you
-- The **Myr'rodin** button in the top-left toolbar shows the whole party's HP, mana and psi, a quick dice box and the roll log. The GM gets Damage/Heal buttons for every character.
+- The **Myr'rodin** button in the top-left toolbar shows the whole party's HP and mana, a quick dice box and the roll log. The GM gets Damage/Heal buttons for every character.
 
 ---
 
@@ -65,13 +65,25 @@ Each character can stay in their Google Sheet and update Owlbear automatically.
 2. Copy the sheet's link from the address bar.
 3. In Owlbear, right-click the token → **Create Myr'rodin Sheet → Link a Google Sheet**, and paste the link. For a sheet that already exists, paste it on the **Sheet** tab instead.
 
-What syncs: name, class, level, XP, ability scores, saves, skill tiers (totals match the Google Sheet exactly), AC, speed, max HP, mana, mana regen, Initiative, Will Check, Spell Save DC, combat helper, features, feats, weapons, spells, psionics, inventory and money.
+What syncs: name, class, level, XP, ability scores, saves, skill tiers (totals match the Google Sheet exactly), AC, speed, max HP, mana, mana regen, Initiative, Will Check, Spell Save DC, combat helper, features, feats, weapons (or the Combat Helper's "Attack +X / Damage" lines when there's no weapon table), spells, inventory and money.
 
 **Spell notes:** a spell named like `Resistance - Wisdom` or `Mending (Wisdom)` comes across as the spell **Resistance** with the note **Wisdom**, shown under the spell's level. If the note is an ability (Wisdom, WIS, Charisma…), the **Cast** button rolls with that ability instead of the sheet's usual casting ability. You can also type notes on any spell by hand.
 
-What stays in Owlbear: current HP, spent mana and psi during play, and combat-helper ticks. If the Google Sheet's own **Current HP** or **Mana Used** changes, that wins.
+What stays in Owlbear: current HP, spent mana during play, and combat-helper ticks. If the Google Sheet's own **Current HP** or **Mana Used** changes, that wins.
 
 While the GM has the room open, linked sheets re-sync about once a minute. Anyone who can edit a sheet can also click **Sync now**. The Sheet tab lists anything it couldn't find on the Google Sheet (usually a renamed label).
+
+
+## Magic: learning spells
+
+Spells follow the Crafting System rules:
+
+- **Cantrips** are known automatically.
+- A spell of level N is **learned after N successful casts**. Unlearned spells sit under **Learning** with progress pips and a **Practice cast** button. Each successful cast adds one; when it's full the spell moves to Known spells.
+- From the Google Sheet, a spell counts as learned if its **Learn** box is ticked or its **Cast Times** ticks reach its level. Spells with some casts show under Learning.
+- Everything else on the sheet's spell list goes into the **Spell library** (collapsed at the bottom of Magic). Click **Start learning** to move one into Learning. The library isn't saved on the token, which keeps sheets small.
+- Spell levels go to 13 (mana 30/33/36/40 and DC 40/45/50/55 for 10th–13th). Mana regen goes to Int 40.
+- Progress made in Owlbear isn't written back to Google. Tick **Cast Times** on the Google Sheet too; a sync always keeps the higher count, so nothing is lost.
 
 ---
 
@@ -79,7 +91,7 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 Click the **Myr'rodin** button (top left) to open the menu. It has four tabs, and clicking anywhere on the map closes it again, so it never locks the screen.
 
-- **Party**: everyone's HP, mana and psi. The GM gets Damage/Heal buttons and **⚔ Start combat**.
+- **Party**: everyone's HP and mana. The GM gets Damage/Heal buttons and **⚔ Start combat**.
 - **Combat**: initiative order, joining, and the GM's turn controls.
 - **Inventory**: your character's gear and coins, plus the shared **party stash**. The GM can pick any character to see their inventory.
 - **Dice**: quick rolls (one-tap d4 to d100), the roll log and the dice animation switch.
@@ -94,7 +106,7 @@ Player characters are saved with the **room**, not just on their token, so chang
 - Or open **Party** and click **Place party on map**: everyone who isn't on the map yet appears in the middle of the view, sheets attached.
 - The Party tab always lists the whole party, even on a map they're not on.
 
-**Party frames:** everyone's HP, mana, psi and AC, always on screen (top-left by default). Clicks pass straight through them. Each player can turn them off or move them at the bottom of the Party tab.
+**Party frames:** everyone's HP, mana and AC, always on screen (top-left by default). Clicks pass straight through them. Each player can turn them off or move them at the bottom of the Party tab.
 
 Owlbear only lets a room store a small amount of data, so saved sheets are compressed, and Google-linked characters save just their link (the sheet reloads from Google). The Party tab shows how much space the party uses.
 

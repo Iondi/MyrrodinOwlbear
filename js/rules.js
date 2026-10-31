@@ -80,6 +80,7 @@ export const XP_TABLE = [
 export const MANA_REGEN_BY_INT = [
   [0, "0"], [10, "1"], [12, "1d4"], [14, "1d6"], [16, "1d8"], [18, "2d4"],
   [20, "1d10"], [22, "1d12"], [24, "2d6"], [26, "3d4"], [28, "2d8"], [30, "4d4"], [32, "1d20"],
+  [34, "2d10"], [36, "2d12"], [38, "4d6"], [40, "3d10"],
 ];
 export function manaRegenFor(intScore) {
   const n = Number(intScore) || 0;
@@ -108,7 +109,14 @@ export const SPELL_LEVELS = [
   { level: 7, label: "7th", mana: 21, dc: 31 },
   { level: 8, label: "8th", mana: 24, dc: 33 },
   { level: 9, label: "9th", mana: 27, dc: 35 },
+  { level: 10, label: "10th", mana: 30, dc: 40 },
+  { level: 11, label: "11th", mana: 33, dc: 45 },
+  { level: 12, label: "12th", mana: 36, dc: 50 },
+  { level: 13, label: "13th", mana: 40, dc: 55 },
 ];
+// Spells are learned in play: a spell of level N is learned after N
+// successful casts. Cantrips come automatically.
+export const castsToLearn = (level) => Math.max(0, Number(level) || 0);
 
 // ---- Derived numbers ----------------------------------------------------
 export function derive(c) {
