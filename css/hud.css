@@ -3,9 +3,10 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .hud-layer { position: fixed; inset: 0; pointer-events: none; }
 .hud { position: fixed; pointer-events: none; display: grid; gap: 10px; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #efe8f3; }
 .hud-tr { top: 14px; right: 84px; }   /* left of Owlbear's right-hand toolbar */
-.hud-tl { top: 64px; left: 14px; }   /* under the extension buttons */
+.hud-tl { top: 250px; left: 14px; }  /* about two inches down, clear of the extension buttons and menu */
 .hud-br { bottom: 16px; right: 16px; }  /* under the right-hand toolbar */
 .hud-bl { bottom: 16px; left: 14px; }
+.hud-tl .hud-card { max-height: calc(100vh - 270px); }
 .hud-card {
   width: 220px; max-height: calc(100vh - 140px); overflow-y: hidden; border-radius: 12px; overflow: hidden;
   background: rgba(20, 15, 27, .82); backdrop-filter: blur(6px);

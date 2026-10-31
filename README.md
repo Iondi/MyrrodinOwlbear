@@ -111,7 +111,7 @@ Player characters are saved with the **room**, not just on their token, so chang
 - Or open **Party** and click **Place party on map**: everyone who isn't on the map yet appears in the middle of the view, sheets attached.
 - The Party tab always lists the whole party, even on a map they're not on.
 
-**Party frames:** everyone's HP, mana and AC, always on screen (top-left by default). Clicks pass straight through them. Each player can turn them off or move them at the bottom of the Party tab.
+**Party frames:** everyone's HP, mana and AC, always on screen (on the left, about two inches down, by default). Clicks pass straight through them. Each player can turn them off or move them at the bottom of the Party tab.
 
 Owlbear only lets a room store a small amount of data, so saved sheets are compressed, and Google-linked characters save just their link (the sheet reloads from Google). The Party tab shows how much space the party uses.
 
