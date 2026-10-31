@@ -458,3 +458,6 @@ html:has(body.party-page)::-webkit-scrollbar-thumb:hover { background: #d8b46a99
 .lib-name small { color: var(--muted); font-size: 11px; }
 .spell-hit-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
 .spell-hit-row .primary b { margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: #0003; }
+.custom-roll { display: inline-flex; align-items: stretch; flex: 1 1 170px; min-width: 150px; }
+.custom-roll input { flex: 1; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.custom-roll button { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }

@@ -8,8 +8,8 @@
 //  between players' copies still work. Anything it can't find is listed
 //  on the sheet so you know what didn't sync.
 // =====================================================================
-import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.9.5";
-import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.9.5";
+import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.9.6";
+import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.9.6";
 
 // ---------------------------------------------------------------------
 // Links and downloading

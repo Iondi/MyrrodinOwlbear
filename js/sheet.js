@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.9.5";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.5";
-import * as B from "./bridge.js?v=1.9.5";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.5";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.5";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.5";
+} from "./rules.js?v=1.9.6";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.6";
+import * as B from "./bridge.js?v=1.9.6";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.6";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.6";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.6";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -302,6 +302,10 @@ function tabCombat() {
         <button class="primary roll" data-roll="atk:${i}">Attack <b data-calc="atk.${i}"></b></button>
         <button class="roll" data-roll="dmg:${i}">Damage <b data-calc="dmg.${i}"></b></button>
         ${a.graze ? `<button class="roll" data-roll="graze:${i}">Graze <b data-calc="graze.${i}"></b></button>` : ""}
+        <span class="custom-roll" title="Any dice: crits, smites, extra damage… (press Enter to roll)">
+          ${inp(`attacks.${i}.custom`, { ph: "Custom: 2d8+4", label: "Custom damage roll" })}
+          <button class="roll" data-roll="custom:${i}">Roll</button>
+        </span>
       </div>
     </div>`).join("");
   return `
@@ -588,7 +592,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.5"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.6"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
@@ -612,6 +616,10 @@ function onEdit(e) {
   scheduleSave();
 }
 app.addEventListener("input", onEdit);
+app.addEventListener("keydown", (e) => {
+  const p = e.target.dataset?.path;
+  if (e.key === "Enter" && p && /^attacks\.\d+\.custom$/.test(p)) { e.preventDefault(); doRoll(`custom:${p.split(".")[1]}`); }
+});
 app.addEventListener("change", onEdit);
 
 app.addEventListener("focusout", () => {
@@ -752,6 +760,14 @@ function doRoll(what) {
     case "dmg": {
       const a = state.attacks[idx];
       send(`${a.name || "Attack"} — damage${a.damageType ? ` (${a.damageType})` : ""}`, roll(a.flat ? (a.damage || "0") : plus(a.damage || "0", d.mods[a.ability || "str"])));
+      break;
+    }
+    case "custom": {
+      const a = state.attacks[idx];
+      const box = app.querySelector(`[data-path="attacks.${idx}.custom"]`);
+      const expr = String(box?.value ?? a.custom ?? "").trim();
+      if (!expr || !isDiceExpression(expr)) { toast("Type a roll first, like 2d8+4.", "bad"); break; }
+      send(`${a.name || "Attack"} — custom damage${a.damageType ? ` (${a.damageType})` : ""}`, roll(expr));
       break;
     }
     case "graze": {
