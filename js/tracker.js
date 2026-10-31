@@ -1,8 +1,8 @@
 // The Combat tab of the Myr'rodin menu: initiative order, joining, and the
 // GM's turn controls. mountCombat(element) draws it into the menu.
-import * as B from "./bridge.js?v=1.7.1";
-import * as C from "./combat.js?v=1.7.1";
-import { normalize } from "./rules.js?v=1.7.1";
+import * as B from "./bridge.js?v=1.7.2";
+import * as C from "./combat.js?v=1.7.2";
+import { normalize } from "./rules.js?v=1.7.2";
 
 let root = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -112,7 +112,7 @@ function render() {
 }
 
 // Each player chooses whether the turn-order strip shows on their screen, and where.
-const CORNERS = [["tr", "Top right"], ["tl", "Top left"], ["br", "Bottom right"], ["bl", "Bottom left"]];
+const CORNERS = [["br", "Bottom right"], ["bl", "Bottom left"], ["tr", "Top right"], ["tl", "Top left"]];
 function hudSettings() {
   const on = B.hudOn();
   const corner = B.hudCorner();

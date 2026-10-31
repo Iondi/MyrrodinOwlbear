@@ -1,12 +1,12 @@
 /* Turn-order strip (click-through layer over the map) */
 html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
 .hud { position: fixed; pointer-events: none; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #efe8f3; }
-.hud-tr { top: 76px; right: 14px; }
+.hud-tr { top: 14px; right: 84px; }   /* left of Owlbear's right-hand toolbar */
 .hud-tl { top: 76px; left: 76px; }
-.hud-br { bottom: 84px; right: 14px; }
+.hud-br { bottom: 16px; right: 16px; }  /* under the right-hand toolbar */
 .hud-bl { bottom: 84px; left: 76px; }
 .hud-card {
-  width: 220px; border-radius: 12px; overflow: hidden;
+  width: 220px; max-height: calc(100vh - 140px); overflow-y: hidden; border-radius: 12px; overflow: hidden;
   background: rgba(20, 15, 27, .82); backdrop-filter: blur(6px);
   border: 1px solid rgba(216, 180, 106, .45); box-shadow: 0 12px 30px rgba(0, 0, 0, .5), 0 0 24px rgba(138, 92, 240, .18);
   animation: hud-in .35s ease-out;

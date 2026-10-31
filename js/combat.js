@@ -4,9 +4,9 @@
 //  sees the same order. The GM's computer makes the changes; players ask
 //  to join by sending a message, and the GM's side adds them.
 // =====================================================================
-import { OBR, NS, inOBR, listSheets, broadcastRoll } from "./bridge.js?v=1.7.1";
-import { derive, normalize } from "./rules.js?v=1.7.1";
-import { roll, d20 } from "./dice.js?v=1.7.1";
+import { OBR, NS, inOBR, listSheets, broadcastRoll } from "./bridge.js?v=1.7.2";
+import { derive, normalize } from "./rules.js?v=1.7.2";
+import { roll, d20 } from "./dice.js?v=1.7.2";
 
 export const COMBAT_KEY = `${NS}/combat`;
 export const JOIN_CHANNEL = `${NS}/combat-join`;
