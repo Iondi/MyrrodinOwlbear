@@ -84,6 +84,20 @@ Click the **Myr'rodin** button (top left) to open the menu. It has four tabs, an
 - **Inventory**: your character's gear and coins, plus the shared **party stash**. The GM can pick any character to see their inventory.
 - **Dice**: quick rolls (one-tap d4 to d100), the roll log and the dice animation switch.
 
+## The party (saved with the room)
+
+Player characters are saved with the **room**, not just on their token, so changing or refreshing a scene doesn't mean setting them up again.
+
+- Any sheet with an **Owner** joins the party automatically. (The GM can also add an NPC companion from its Sheet tab.)
+- The GM's computer keeps the saved copy up to date as you play: HP, mana, gear, everything.
+- On a new scene, drop a token with the **same picture** (or named the same as the character) and the sheet attaches by itself.
+- Or open **Party** and click **Place party on map**: everyone who isn't on the map yet appears in the middle of the view, sheets attached.
+- The Party tab always lists the whole party, even on a map they're not on.
+
+**Party frames:** everyone's HP, mana, psi and AC, always on screen (top-left by default). Clicks pass straight through them. Each player can turn them off or move them at the bottom of the Party tab.
+
+Owlbear only lets a room store a small amount of data, so saved sheets are compressed, and Google-linked characters save just their link (the sheet reloads from Google). The Party tab shows how much space the party uses.
+
 ## Combat & initiative
 
 1. GM: **Party → ⚔ Start combat** (or the Combat tab).
@@ -175,6 +189,7 @@ js/dicepage.js       runs the layer over the map
 js/tracker.js        the Combat tab
 js/inventory.js      the Inventory tab
 js/stash.js          the shared party stash
+js/roster.js         the party saved with the room
 hud.html, js/hud.js  the click-through turn-order strip
 js/combat.js         turn order, joining and rolling
 css/tracker.css      the Combat tab's look

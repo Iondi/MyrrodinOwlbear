@@ -415,3 +415,16 @@ button.stat:hover b { color: var(--gold); }
 .inv-coins label span, .coin-ro span { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
 .inv-coins input { text-align: center; padding: 4px 2px; }
 .coin-ro b { font-size: 15px; color: var(--gold); }
+.pf-settings { margin: 12px; }
+
+/* Party roster */
+.party-list { display: grid; gap: 10px; }
+#party { display: grid; gap: 10px; }
+.member.offmap { border-style: dashed; opacity: .85; }
+.member-open:disabled { cursor: default; opacity: 1; }
+.offmap-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.offmap-row > span:last-child { display: flex; gap: 4px; align-items: center; }
+.chip-off { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 7px; border: 1px dashed var(--line-strong); border-radius: 999px; }
+.place-all { width: 100%; justify-content: center; }
+.section-h { margin: 6px 2px 0; }
+.storage-note { text-align: center; margin: 2px 0 0; }

@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.7.2";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.7.2";
-import * as B from "./bridge.js?v=1.7.2";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.7.2";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.7.2";
-import { enqueue as playDice } from "./diceanim.js?v=1.7.2";
+} from "./rules.js?v=1.8.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.8.0";
+import * as B from "./bridge.js?v=1.8.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.8.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.8.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.8.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -435,6 +435,13 @@ function tabSettings() {
   return `
     <div class="grid-2">
       ${googlePanel()}
+      <div class="panel">
+        <div class="panel-head"><h3>Party</h3></div>
+        ${state.partyId || state.ownerId
+          ? `<p class="small">✓ <b>In the party.</b> This character is saved with the room, so it carries over to new scenes. Drop a token with the same picture or name on any map and this sheet attaches by itself.</p>`
+          : `<p class="muted small">Not in the party. Set an <b>Owner</b> below to make this a player character; it's then saved with the room and follows you between scenes.</p>`}
+        ${isGM && !state.ownerId ? `<button class="small" data-action="joinparty">${state.partyId ? "Remove from party" : "Add to party (NPC companion)"}</button>` : ""}
+      </div>
       ${isGM ? `<div class="panel">
         <div class="panel-head"><h3>Who can edit</h3></div>
         ${field("Owner", sel("ownerId", ownerOpts))}
@@ -645,6 +652,10 @@ app.addEventListener("click", async (e) => {
       toast("Long rest taken: HP, mana and psi restored.", "good");
       commit(); break;
     case "export": showExport(); break;
+    case "joinparty":
+      if (state.partyId) { const { removeMember } = await import("./roster.js?v=1.8.0"); await removeMember(state.partyId); delete state.partyId; toast("Removed from the party."); }
+      else { state.partyId = `pc-${Math.random().toString(36).slice(2, 9)}`; toast("Added to the party. It'll be saved with the room in a moment.", "good"); }
+      commit(); break;
     case "gsync": syncNow(false); break;
     case "glink": {
       const url = document.getElementById("gs-url")?.value.trim();
