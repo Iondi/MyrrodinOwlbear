@@ -1,0 +1,31 @@
+/* Turn-order strip (click-through layer over the map) */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+.hud { position: fixed; pointer-events: none; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #efe8f3; }
+.hud-tr { top: 76px; right: 14px; }
+.hud-tl { top: 76px; left: 76px; }
+.hud-br { bottom: 84px; right: 14px; }
+.hud-bl { bottom: 84px; left: 76px; }
+.hud-card {
+  width: 220px; border-radius: 12px; overflow: hidden;
+  background: rgba(20, 15, 27, .82); backdrop-filter: blur(6px);
+  border: 1px solid rgba(216, 180, 106, .45); box-shadow: 0 12px 30px rgba(0, 0, 0, .5), 0 0 24px rgba(138, 92, 240, .18);
+  animation: hud-in .35s ease-out;
+}
+.hud-head { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); font-family: "Cinzel", Georgia, serif; font-size: 13px; color: #d8b46a; }
+.hud-sigil { width: 10px; height: 10px; border: 1.5px solid #d8b46a; transform: rotate(45deg); }
+.hud-sub { margin-left: auto; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 10px; color: #a596b0; }
+.hud ol { list-style: none; margin: 0; padding: 5px; display: grid; gap: 3px; }
+.hud li { display: grid; grid-template-columns: 26px 1fr; gap: 7px; align-items: center; padding: 4px 6px; border-radius: 8px; }
+.hud li.now { background: linear-gradient(90deg, rgba(216, 180, 106, .28), rgba(216, 180, 106, .06)); box-shadow: inset 0 0 0 1px rgba(216, 180, 106, .7); }
+.hud li.mine.now { background: linear-gradient(90deg, rgba(95, 207, 142, .3), rgba(95, 207, 142, .06)); box-shadow: inset 0 0 0 1px rgba(95, 207, 142, .8); }
+.hud li.down { opacity: .45; }
+.hud li.npc .hud-init { color: #f07a8b; }
+.hud-init { font-family: "Cinzel", Georgia, serif; font-weight: 700; font-size: 14px; color: #d8b46a; text-align: center; }
+.hud-name { display: grid; gap: 2px; font-size: 13px; line-height: 1.15; min-width: 0; }
+.hud-name em { font-style: normal; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #ffe08a; margin-left: 6px; }
+.hud li.mine em { color: #8af0b6; }
+.hud-name em.next { color: #a596b0; }
+.hud-hp { display: block; height: 3px; border-radius: 9px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.hud-hp i { display: block; height: 100%; background: #5fcf8e; }
+.hud-more { font-size: 10px; color: #a596b0; text-align: center; padding: 0 0 6px; }
+@keyframes hud-in { from { opacity: 0; transform: translateY(-6px); } }

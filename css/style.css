@@ -371,3 +371,47 @@ button.stat:hover b { color: var(--gold); }
 .cast-with { font-size: 10px; font-weight: 800; letter-spacing: .06em; padding: 1px 6px; border-radius: 999px; background: #ffffff26; }
 .spell-note.empty { opacity: 0; transition: opacity .15s; }
 .spell:hover .spell-note.empty, .spell-note.empty:focus-within { opacity: 1; }
+
+.version-tag { text-align: center; font-size: 10px; color: var(--faint); margin: 0 0 12px; letter-spacing: .06em; }
+
+/* ---------- Myr'rodin menu (tabs) ---------- */
+.party-page { min-height: 100vh; }
+.menu-tabs { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-bottom: 1px solid var(--line); }
+.menu-tabs button { position: relative; background: none; border: none; border-radius: 0; padding: 10px 4px 9px; justify-content: center; color: var(--muted); font-size: 13px; border-bottom: 2px solid transparent; }
+.menu-tabs button:hover { background: none; color: var(--text); }
+.menu-tabs button.active { color: var(--text); border-bottom-color: var(--ember); }
+.tab-dot { position: absolute; top: 8px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: transparent; }
+.tab-dot.on { background: var(--ember); box-shadow: 0 0 0 3px #e2475c33; animation: trk-pulse 2s ease-in-out infinite; }
+.menu-page[hidden] { display: none !important; }
+.menu-page[data-page="combat"] { padding: 10px; }
+.menu-page[data-page="combat"] .trk { margin: 0; }
+.menu-page.log-wrap { padding: 12px; }
+.quick-dice { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.quick-dice button { padding: 6px 0; justify-content: center; font-size: 12px; font-family: var(--display); }
+
+.hud-settings { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 8px; background: var(--surface); }
+.hud-settings p { margin: 0; }
+.hud-corners { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.hud-corners[hidden] { display: none; }
+.chip-btn { justify-content: center; font-size: 12px; padding: 5px 8px; font-weight: 600; }
+.chip-btn.on { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+
+/* ---------- Inventory tab ---------- */
+.inv { padding: 10px 12px 14px; display: grid; gap: 14px; }
+.inv-block { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.inv-block.stash { border-color: #d8b46a55; background: linear-gradient(180deg, rgba(216, 180, 106, .06), transparent 60%), var(--surface); }
+.inv-picker { width: auto; max-width: 60%; padding: 4px 8px; font-size: 13px; }
+.inv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.inv-list li { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 6px; align-items: center; }
+.inv-qty { text-align: center; padding: 4px 2px; }
+.inv-qty.ro, .inv-name.ro { padding: 4px 2px; }
+.inv-qty.ro { text-align: center; color: var(--gold); font-weight: 700; }
+.inv-name { padding: 4px 8px; }
+.inv-list .x { font-size: 11px; padding: 3px 5px; white-space: nowrap; }
+.inv-note { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin-top: -2px; }
+.inv-add { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.inv-coins { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.inv-coins label, .coin-ro { display: grid; gap: 2px; justify-items: center; }
+.inv-coins label span, .coin-ro span { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.inv-coins input { text-align: center; padding: 4px 2px; }
+.coin-ro b { font-size: 15px; color: var(--gold); }
