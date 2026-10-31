@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.9.7";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.7";
-import * as B from "./bridge.js?v=1.9.7";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.9.7";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.7";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.7";
+} from "./rules.js?v=1.9.8";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.8";
+import * as B from "./bridge.js?v=1.9.8";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.9.8";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.8";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.8";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -297,7 +297,6 @@ function tabCombat() {
         ${field("Extra to-hit", inp(`attacks.${i}.bonus`, { type: "number", ph: "0" }), "narrow")}
       </div>
       <div class="card-flags">${chk(`attacks.${i}.proficient`, "Proficient")}${chk(`attacks.${i}.graze`, "Graze on miss", "If the attack misses, the ability modifier still hits")}</div>
-      ${field("Notes", inp(`attacks.${i}.notes`, { ph: "Cursed, two-handed…" }))}
       <div class="roll-row">
         <button class="primary roll" data-roll="atk:${i}">Attack <b data-calc="atk.${i}"></b></button>
         <button class="roll" data-roll="dmg:${i}">Damage <b data-calc="dmg.${i}"></b></button>
@@ -590,7 +589,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.7"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.8"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
@@ -642,7 +641,7 @@ app.addEventListener("click", async (e) => {
     case "close": await saveNow(); B.closeSheet(); break;
     case "addstr": getPath(state, arg).push(""); commit(); focusLast(`[data-path^="${arg}."]`); break;
     case "addcombat": state.combat.push({ text: "", done: false }); commit(); focusLast('[data-path$=".text"]'); break;
-    case "addattack": state.attacks.push({ name: "", range: "5 ft", ability: "str", damage: "1d8", damageType: "", proficient: true, equipped: true, graze: false, bonus: 0, notes: "" }); commit(); break;
+    case "addattack": state.attacks.push({ name: "", range: "5 ft", ability: "str", damage: "1d8", damageType: "", proficient: true, equipped: true, graze: false, bonus: 0 }); commit(); break;
     case "addspell": {
       const lvl = SPELL_LEVELS[num(arg)];
       state.magic.spells.push({ level: lvl.level, casts: 0, local: true, name: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
