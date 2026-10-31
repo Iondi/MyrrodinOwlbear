@@ -76,6 +76,8 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ## Magic: learning spells
 
+**Roll to hit:** under Spellcasting on the Magic tab, **✦ Roll to hit** rolls a spell attack: d20 + casting modifier + proficiency, plus any **Extra to-hit bonus** you type in. Advantage and Disadvantage buttons sit beside it.
+
 Spells follow the Crafting System rules:
 
 - **Cantrips** are known automatically.
@@ -121,6 +123,7 @@ Owlbear only lets a room store a small amount of data, so saved sheets are compr
 3. The order sorts itself (highest first, ties to higher Dexterity). The GM clicks **Begin round 1**, then **Done — next** each turn. **◀** steps back.
 4. A **turn-order strip** appears on screen during the fight. It's click-through, so it never blocks the map or Owlbear's buttons. Each player can turn it off or move it to any corner from the Combat tab.
 5. Everyone gets a notification when the turn changes.
+6. **Mana at the start of a turn:** when a character with mana comes up, whoever runs it (the owner, or the GM for NPCs) gets *"Your turn — start by re-rolling your mana"*, and the Combat tab shows a **✦ Re-roll mana** button. It rolls the character's regen, adds it (up to max) and posts the roll to everyone. Once it's done that turn, it shows ✓.
 
 GM extras: click an initiative number to change it, ✕ removes someone, **+ Add new tokens** pulls in sheets placed mid-fight, **End combat** (click twice) ends it.
 

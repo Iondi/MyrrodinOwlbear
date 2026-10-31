@@ -195,6 +195,7 @@ export function blankCharacter(name = "New Adventurer") {
     initMisc: 0,
     willMisc: 0,
     spellDCMisc: 0,
+    spellHitMisc: 0,
     mana: { current: 0, max: 0, regen: "0" },
     psi: { current: 0, max: 0 },
     combat: [],

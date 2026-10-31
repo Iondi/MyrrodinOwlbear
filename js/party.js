@@ -1,11 +1,11 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.9.3";
-import { normalize, inParty } from "./rules.js?v=1.9.3";
-import { roll } from "./dice.js?v=1.9.3";
-import * as Combat from "./combat.js?v=1.9.3";
-import { mountCombat } from "./tracker.js?v=1.9.3";
-import { mountInventory } from "./inventory.js?v=1.9.3";
-import * as Roster from "./roster.js?v=1.9.3";
+import * as B from "./bridge.js?v=1.9.5";
+import { normalize, inParty } from "./rules.js?v=1.9.5";
+import { roll } from "./dice.js?v=1.9.5";
+import * as Combat from "./combat.js?v=1.9.5";
+import { mountCombat } from "./tracker.js?v=1.9.5";
+import { mountInventory } from "./inventory.js?v=1.9.5";
+import * as Roster from "./roster.js?v=1.9.5";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");

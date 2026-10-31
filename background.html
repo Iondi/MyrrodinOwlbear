@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8" /><title>Myr'rodin background</title></head>
-<body><script type="module" src="js/background.js?v=1.9.3"></script>
+<body><script type="module" src="js/background.js?v=1.9.5"></script>
   <script>
   // If GitHub has a newer version than this page, reload this page fresh
   // (the extension code above starts right away; this only checks for updates).
   (function () {
-    var V = "1.9.3";
+    var V = "1.9.5";
     fetch("manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) {
       var q = new URLSearchParams(location.search);
       if (m.version && m.version !== V && q.get("fresh") !== m.version) { q.set("fresh", m.version); location.replace(location.pathname + "?" + q.toString() + location.hash); }

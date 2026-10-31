@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.9.3";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.3";
-import * as B from "./bridge.js?v=1.9.3";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.3";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.3";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.3";
+} from "./rules.js?v=1.9.5";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.5";
+import * as B from "./bridge.js?v=1.9.5";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.5";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.5";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.5";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -108,7 +108,7 @@ function attackBonus(a, d) {
 
 function calcMap() {
   const d = derive(state);
-  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
+  const m = { init: fmt(d.initiative), will: fmt(d.will), willsave: fmt(d.willSave), dc: d.spellDC, regenhint: `Int ${num(state.abilities.int)} → ${d.suggestedRegen}`, cast: fmt(d.castMod), spellhit: fmt(d.castMod + num(state.spellHitMisc)), pb: fmt(d.pb), combined: d.combinedLevel, xplevel: d.xpLevel };
   ABILITIES.forEach((a) => { m[`mod.${a.key}`] = fmt(d.mods[a.key]); m[`save.${a.key}`] = fmt(d.saves[a.key]); });
   SKILLS.forEach((s) => {
     const sk = d.skills[s.key];
@@ -396,6 +396,12 @@ function tabMagic() {
         <div class="field narrow"><span class="field-label">Spell save DC</span><span class="readout"><b data-calc="dc"></b></span></div>
         ${field("Extra DC bonus", inp("spellDCMisc", { type: "number", ph: "0" }), "narrow")}
         <div class="field narrow"><span class="field-label">Suggested regen</span><span class="readout" data-calc="regenhint"></span></div>
+        ${field("Extra to-hit bonus", inp("spellHitMisc", { type: "number", ph: "0" }), "narrow")}
+      </div>
+      <div class="spell-hit-row">
+        <button class="primary roll" data-roll="spellhit" title="d20 + casting modifier + proficiency (+ any extra to-hit bonus)">✦ Roll to hit <b data-calc="spellhit"></b></button>
+        <button class="roll" data-roll="spellhit:adv">Advantage</button>
+        <button class="roll" data-roll="spellhit:dis">Disadvantage</button>
       </div>
       <p class="muted small">Cast = d20 + casting modifier + proficiency against the spell's DC; mana is spent on a success. A spell of level N is learned after N successful casts, and cantrips are known automatically.</p>
       ${canEdit ? `<div class="add-row"><span class="muted small">Add a spell:</span>${SPELL_LEVELS.map((l) => `<button class="add chip" data-action="addspell:${l.level}">${l.label}</button>`).join("")}</div>` : ""}
@@ -582,7 +588,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.3"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.5"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
@@ -724,6 +730,12 @@ function doRoll(what) {
   switch (kind) {
     case "init": rollCheck("Initiative", d.initiative); break;
     case "will": rollCheck("Will Check", d.will); break;
+    case "spellhit": {
+      const ab = ABILITIES.find((a) => a.key === (state.magic.ability || "cha"));
+      const opt = key === "adv" ? { advantage: true } : key === "dis" ? { disadvantage: true } : {};
+      send(`Spell attack — to hit (${ab?.short || ""})${key === "adv" ? " (adv)" : key === "dis" ? " (dis)" : ""}`, roll(d20(d.castMod + num(state.spellHitMisc)), opt));
+      break;
+    }
     case "willsave": rollCheck("Will save", d.willSave); break;
     case "ability": rollCheck(`${ABILITIES.find((a) => a.key === key).name} check`, d.mods[key]); break;
     case "save": rollCheck(`${ABILITIES.find((a) => a.key === key).name} save`, d.saves[key]); break;
