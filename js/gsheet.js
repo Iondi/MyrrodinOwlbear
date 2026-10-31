@@ -8,8 +8,8 @@
 //  between players' copies still work. Anything it can't find is listed
 //  on the sheet so you know what didn't sync.
 // =====================================================================
-import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.6.0";
-import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.6.0";
+import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.7.0";
+import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.7.0";
 
 // ---------------------------------------------------------------------
 // Links and downloading
@@ -675,8 +675,14 @@ export function mergeIntoSheet(current, imported, missing) {
   }
   if (d.spells) c.magic = { ...c.magic, spells: d.spells };
   if (d.psionics) c.psionics = d.psionics;
-  if (d.equipment) c.equipment = d.equipment;
-  if (d.money) c.money = { ...c.money, ...d.money };
+  // Gear: the sheet's list, plus anything added in Owlbear (stash loot etc.).
+  if (d.equipment) {
+    const local = (c.equipment || []).filter((e) => e.local);
+    const names = new Set(d.equipment.map((e) => e.name.toLowerCase()));
+    c.equipment = [...d.equipment, ...local.filter((e) => !names.has(String(e.name).toLowerCase()))];
+  }
+  // Coins: only take the sheet's if it actually has some.
+  if (d.money && Object.values(d.money).some((v) => Number(v))) c.money = { ...c.money, ...d.money };
 
   c.googleSheet = {
     ...link,

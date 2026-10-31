@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.6.0";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.6.0";
-import * as B from "./bridge.js?v=1.6.0";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.6.0";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.6.0";
-import { enqueue as playDice } from "./diceanim.js?v=1.6.0";
+} from "./rules.js?v=1.7.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.7.0";
+import * as B from "./bridge.js?v=1.7.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.7.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.7.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.7.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";

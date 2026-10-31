@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR from "../vendor/obr-sdk.js?v=1.6.0";
+import OBR from "../vendor/obr-sdk.js?v=1.7.0";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -18,6 +18,13 @@ export const setDiceAnim = (on) => { try { localStorage.setItem("myrrodin-dice-a
 // The sheet window says "I'm open" every couple of seconds; your own rolls
 // then animate inside the sheet instead of over the map.
 export const markSheetOpen = () => { try { localStorage.setItem("myrrodin-sheet-open", String(Date.now())); } catch { /* ignore */ } };
+export const HUD_MODAL = `${NS}/hud-modal`;
+export const hudOn = () => pref("myrrodin-hud", "on") !== "off";
+export const setHudOn = (on) => { try { localStorage.setItem("myrrodin-hud", on ? "on" : "off"); } catch { /* ignore */ } };
+export const hudCorner = () => pref("myrrodin-hud-corner", "tr");
+export const setHudCorner = (c) => { try { localStorage.setItem("myrrodin-hud-corner", c); } catch { /* ignore */ } };
+export const menuTab = () => pref("myrrodin-menu-tab", "party");
+export const setMenuTab = (t) => { try { localStorage.setItem("myrrodin-menu-tab", t); } catch { /* ignore */ } };
 export const sheetRecentlyOpen = () => Date.now() - Number(pref("myrrodin-sheet-open", "0")) < 4000;
 export const inOBR = OBR.isAvailable;
 export { OBR };

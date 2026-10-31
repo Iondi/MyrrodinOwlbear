@@ -1,8 +1,10 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.6.0";
-import { normalize } from "./rules.js?v=1.6.0";
-import { roll } from "./dice.js?v=1.6.0";
-import * as Combat from "./combat.js?v=1.6.0";
+import * as B from "./bridge.js?v=1.7.0";
+import { normalize } from "./rules.js?v=1.7.0";
+import { roll } from "./dice.js?v=1.7.0";
+import * as Combat from "./combat.js?v=1.7.0";
+import { mountCombat } from "./tracker.js?v=1.7.0";
+import { mountInventory } from "./inventory.js?v=1.7.0";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -143,13 +145,41 @@ function renderCombatBar() {
   const active = combatState?.active;
   if (!active && self.role !== "GM") { combatBar.innerHTML = ""; return; }
   combatBar.innerHTML = active
-    ? `<div class="combat-on"><span>⚔ Combat · round ${combatState.round}</span><button class="small" id="show-tracker">Show initiative</button></div>`
+    ? `<div class="combat-on"><span>⚔ Combat · round ${combatState.round}</span><button class="small" data-goto="combat">Open</button></div>`
     : `<button class="primary combat-start" id="start-combat">⚔ Start combat</button>`;
-  document.getElementById("show-tracker")?.addEventListener("click", () => Combat.reopenTracker());
   document.getElementById("start-combat")?.addEventListener("click", async (e) => {
     e.target.disabled = true;
     await Combat.startCombat();
+    showTab("combat");
   });
+}
+combatBar.addEventListener("click", (e) => { const g = e.target.closest("[data-goto]"); if (g) showTab(g.dataset.goto); });
+
+// ---- Tabs -------------------------------------------------------------------
+const TABS = ["party", "combat", "inventory", "dice"];
+function showTab(name) {
+  if (!TABS.includes(name)) name = "party";
+  B.setMenuTab(name);
+  document.querySelectorAll(".menu-tabs [data-tab]").forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle("active", on); b.setAttribute("aria-selected", on); });
+  document.querySelectorAll(".menu-page").forEach((p) => { p.hidden = p.dataset.page !== name; });
+  window.scrollTo(0, 0);
+}
+document.querySelector(".menu-tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) showTab(b.dataset.tab); });
+// The background switches us to Combat when a fight starts.
+window.addEventListener("storage", (e) => { if (e.key === "myrrodin-menu-tab" && e.newValue) showTab(e.newValue); });
+showTab(B.menuTab());
+
+document.querySelector(".quick-dice").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-q]");
+  if (!b) return;
+  document.getElementById("free-dice").value = b.dataset.q;
+  freeRoll();
+});
+
+function setCombatDot(st, me) {
+  const dot = document.getElementById("combat-dot");
+  if (!dot) return;
+  dot.className = `tab-dot ${st?.active ? "on" : ""}`;
 }
 
 (async () => {
@@ -161,6 +191,8 @@ function renderCombatBar() {
   combatState = await Combat.getCombat().catch(() => null);
   renderCombatBar();
   Combat.onCombatChange((st) => { combatState = st; renderCombatBar(); });
+  mountCombat(document.getElementById("combat-root"), (st, me) => setCombatDot(st, me)).catch((err) => console.error(err));
+  mountInventory(document.getElementById("inv-root")).catch((err) => console.error(err));
   let unsubscribe = null;
   const watch = () => { try { unsubscribe?.(); unsubscribe = B.onSheetsChange(safeRefresh); } catch { /* scene not ready yet */ } };
   watch();

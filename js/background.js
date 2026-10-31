@@ -1,10 +1,11 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen } from "./bridge.js?v=1.6.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.6.0";
-import * as Combat from "./combat.js?v=1.6.0";
-import { normalize } from "./rules.js?v=1.6.0";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, setMenuTab } from "./bridge.js?v=1.7.0";
+import { syncFromGoogle } from "./gsheet.js?v=1.7.0";
+import * as Combat from "./combat.js?v=1.7.0";
+import * as Stash from "./stash.js?v=1.7.0";
+import { normalize } from "./rules.js?v=1.7.0";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -71,7 +72,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.6.0"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.7.0"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -89,18 +90,39 @@ function listenDiceControl() {
 function watchCombat(self) {
   let lastId = null;
   let lastTurn = null;
-  const closedFor = () => { try { return sessionStorage.getItem("myrrodin-tracker-closed") || ""; } catch { return ""; } };
+  let hudOpen = false;
+
+  // The turn-order strip: a click-through layer, only while a fight is on.
+  const syncHud = async (st) => {
+    const want = !!st?.active && hudOn();
+    if (want && !hudOpen) {
+      hudOpen = true;
+      await OBR.modal.open({
+        id: HUD_MODAL, url: asset("hud.html?v=1.7.0"),
+        fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
+      }).catch(() => { hudOpen = false; });
+    } else if (!want && hudOpen) {
+      hudOpen = false;
+      await OBR.modal.close(HUD_MODAL).catch(() => {});
+    }
+  };
+  let current = null;
+  window.addEventListener("storage", (e) => { if (e.key === "myrrodin-hud") syncHud(current); });
 
   const onState = async (st) => {
-    if (!st?.active) {
-      if (lastId) { lastId = null; lastTurn = null; OBR.popover.close(Combat.TRACKER_POPOVER).catch(() => {}); }
-      return;
-    }
+    current = st;
+    await syncHud(st);
+    if (!st?.active) { lastId = null; lastTurn = null; return; }
     if (st.id !== lastId) {
+      const firstSight = lastId === null && Date.now() - (st.started || 0) > 15000;
       lastId = st.id;
       lastTurn = st.currentId;
-      if (closedFor() !== st.id) Combat.openTracker().catch(() => {});
-      OBR.notification.show(self.role === "GM" ? "⚔ Combat started. Players are being asked to join." : "⚔ Combat is starting! Join from the Initiative window on the right.", "INFO");
+      if (!firstSight) {
+        // A new fight: open everyone's Myr'rodin menu on the Combat tab.
+        setMenuTab("combat");
+        OBR.action.open().catch(() => {});
+        OBR.notification.show(self.role === "GM" ? "⚔ Combat started. Players are being asked to join." : "⚔ Combat is starting! Join from the Combat tab in the Myr'rodin menu.", "INFO");
+      }
     }
     if (st.currentId && st.currentId !== lastTurn) {
       lastTurn = st.currentId;
@@ -112,13 +134,13 @@ function watchCombat(self) {
   };
   Combat.getCombat().then(onState).catch(() => {});
   Combat.onCombatChange(onState);
-  OBR.scene.onReadyChange((ready) => { if (ready) Combat.getCombat().then(onState).catch(() => {}); });
+  OBR.scene.onReadyChange((ready) => { if (ready) Combat.getCombat().then(onState).catch(() => {}); else { current = null; syncHud(null); } });
 
-  // Remember when someone hides the tracker so it doesn't keep popping back.
-  OBR.broadcast.onMessage(`${NS}/sheet-tracker-closed`, (e) => { try { sessionStorage.setItem("myrrodin-tracker-closed", e.data); } catch { /* ignore */ } });
-
-  // Only the GM's computer writes the fight; players' rolls arrive here.
-  if (self.role === "GM") OBR.broadcast.onMessage(Combat.JOIN_CHANNEL, (e) => { Combat.applyJoin(e.data).catch(() => {}); });
+  // Only the GM's computer writes the fight and the stash; players' requests arrive here.
+  if (self.role === "GM") {
+    OBR.broadcast.onMessage(Combat.JOIN_CHANNEL, (e) => { Combat.applyJoin(e.data).catch(() => {}); });
+    OBR.broadcast.onMessage(Stash.STASH_CHANNEL, (e) => { Stash.handle(e.data).catch(() => {}); });
+  }
 }
 
 function startGoogleSync() {
