@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.9.0";
-import * as C from "./combat.js?v=1.9.0";
-import { normalize } from "./rules.js?v=1.9.0";
-import * as Roster from "./roster.js?v=1.9.0";
+import * as B from "./bridge.js?v=1.9.1";
+import * as C from "./combat.js?v=1.9.1";
+import { normalize } from "./rules.js?v=1.9.1";
+import * as Roster from "./roster.js?v=1.9.1";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -15,6 +15,7 @@ let self = null;
 let state = null;
 let sheets = new Map();
 let roster = { members: {} };
+let menuOpen = false; // the Myr'rodin menu already shows the party, so the frames step aside while it's open
 
 function turnOrder() {
   if (!state?.active || !self || !B.hudOn()) return "";
@@ -52,7 +53,7 @@ function bar(cls, cur, max) {
   return `<span class="pf-bar ${cls}"><i style="width:${pct}%"></i><b>${cur}/${max}</b></span>`;
 }
 function partyFrames() {
-  if (!self || !B.partyFramesOn()) return "";
+  if (!self || !B.partyFramesOn() || menuOpen) return "";
   // The saved party (works on any scene), using the live token sheet when it's on the map.
   const live = new Map([...sheets.values()].filter((s) => s.sheet?.partyId).map((s) => [s.sheet.partyId, s]));
   const fromRoster = Object.values(roster.members || {}).map((m) => {
@@ -109,6 +110,10 @@ window.addEventListener("storage", (e) => { if (e.key?.startsWith("myrrodin-hud"
   state = await C.getCombat().catch(() => null);
   roster = await Roster.getRoster().catch(() => roster);
   Roster.onRosterChange((r) => { roster = r; render(); });
+  if (B.inOBR) {
+    B.OBR.action.isOpen().then((open) => { menuOpen = open; render(); }).catch(() => {});
+    B.OBR.action.onOpenChange((open) => { menuOpen = open; render(); });
+  }
   await refreshSheets();
   C.onCombatChange((s) => { state = s; render(); });
   try { B.onSheetsChange(refreshSheets); } catch { /* ignore */ }

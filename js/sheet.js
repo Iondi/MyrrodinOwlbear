@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.9.0";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.0";
-import * as B from "./bridge.js?v=1.9.0";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.0";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.0";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.0";
+} from "./rules.js?v=1.9.1";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.1";
+import * as B from "./bridge.js?v=1.9.1";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.1";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.1";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.1";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -661,7 +661,7 @@ app.addEventListener("click", async (e) => {
       commit(); break;
     case "export": showExport(); break;
     case "joinparty":
-      if (state.partyId) { const { removeMember } = await import("./roster.js?v=1.9.0"); await removeMember(state.partyId); delete state.partyId; toast("Removed from the party."); }
+      if (state.partyId) { const { removeMember } = await import("./roster.js?v=1.9.1"); await removeMember(state.partyId); delete state.partyId; toast("Removed from the party."); }
       else { state.partyId = `pc-${Math.random().toString(36).slice(2, 9)}`; toast("Added to the party. It'll be saved with the room in a moment.", "good"); }
       commit(); break;
     case "gsync": syncNow(false); break;

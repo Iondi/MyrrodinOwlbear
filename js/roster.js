@@ -12,9 +12,9 @@
 //  and Google-linked characters only store the link (the sheet reloads
 //  from Google).
 // =====================================================================
-import { OBR, NS, KEY, inOBR, listSheets, saveSheet, tokenLabel, buildImage } from "./bridge.js?v=1.9.0";
-import { normalize } from "./rules.js?v=1.9.0";
-import { deflateSync, inflateSync, strToU8, strFromU8 } from "../vendor/fflate.js?v=1.9.0";
+import { OBR, NS, KEY, inOBR, listSheets, saveSheet, tokenLabel, buildImage } from "./bridge.js?v=1.9.1";
+import { normalize } from "./rules.js?v=1.9.1";
+import { deflateSync, inflateSync, strToU8, strFromU8 } from "../vendor/fflate.js?v=1.9.1";
 
 export const ROSTER_KEY = `${NS}/party`;
 const PREVIEW_KEY = "myrrodin-preview-party";
