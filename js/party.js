@@ -1,11 +1,11 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.9.1";
-import { normalize } from "./rules.js?v=1.9.1";
-import { roll } from "./dice.js?v=1.9.1";
-import * as Combat from "./combat.js?v=1.9.1";
-import { mountCombat } from "./tracker.js?v=1.9.1";
-import { mountInventory } from "./inventory.js?v=1.9.1";
-import * as Roster from "./roster.js?v=1.9.1";
+import * as B from "./bridge.js?v=1.9.3";
+import { normalize, inParty } from "./rules.js?v=1.9.3";
+import { roll } from "./dice.js?v=1.9.3";
+import * as Combat from "./combat.js?v=1.9.3";
+import { mountCombat } from "./tracker.js?v=1.9.3";
+import { mountInventory } from "./inventory.js?v=1.9.3";
+import * as Roster from "./roster.js?v=1.9.3";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -59,11 +59,11 @@ function renderParty() {
     return memberCard({ id: "", image: m.token?.image?.url, c: Roster.sheetFor(m), onMap: false, memberId: m.id });
   });
   // Player sheets on the map that the GM's computer hasn't saved yet.
-  const unsaved = sheets.filter((s) => s.sheet?.ownerId && !memberIds.has(s.sheet.partyId));
+  const unsaved = sheets.filter((s) => inParty(s.sheet) && !memberIds.has(s.sheet.partyId));
   unsaved.forEach((s) => partyCards.push(memberCard({ id: s.id, image: s.image, c: normalize(s.sheet), onMap: true })));
 
   // Everyone else on this map (monsters, NPCs).
-  const others = sheets.filter((s) => !s.sheet?.ownerId && !s.sheet?.partyId && (isGM || !s.sheet.gmOnly));
+  const others = sheets.filter((s) => !inParty(s.sheet) && !memberIds.has(s.sheet?.partyId) && (isGM || !s.sheet.gmOnly));
   const missing = members.filter((m) => !byParty.has(m.id) && m.token?.image?.url).length;
 
   document.getElementById("party-sub").textContent = members.length || unsaved.length

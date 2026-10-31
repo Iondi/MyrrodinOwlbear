@@ -100,7 +100,8 @@ Click the **Myr'rodin** button (top left) to open the menu. It has four tabs, an
 
 Player characters are saved with the **room**, not just on their token, so changing or refreshing a scene doesn't mean setting them up again.
 
-- Any sheet with an **Owner** joins the party automatically. (The GM can also add an NPC companion from its Sheet tab.)
+- The GM ticks **Campaign party** at the top of any character sheet to keep it in the party: players, NPC companions, anyone. Untick it to take them out.
+- Sheets with an **Owner** start ticked automatically.
 - The GM's computer keeps the saved copy up to date as you play: HP, mana, gear, everything.
 - On a new scene, drop a token with the **same picture** (or named the same as the character) and the sheet attaches by itself.
 - Or open **Party** and click **Place party on map**: everyone who isn't on the map yet appears in the middle of the view, sheets attached.

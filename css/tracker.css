@@ -1,5 +1,4 @@
 /* Initiative tracker — the window on the right during combat */
-html, body.tracker-page { background: transparent; height: auto; overflow: hidden; }
 .trk {
   margin: 3px; border-radius: 14px; overflow: hidden;
   background:

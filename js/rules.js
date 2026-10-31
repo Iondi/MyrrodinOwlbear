@@ -164,6 +164,10 @@ export function derive(c) {
   };
 }
 
+// Is this sheet in the campaign party (saved with the room, kept between scenes)?
+// Owned sheets join automatically unless the GM unticked "Campaign party".
+export const inParty = (s) => !!s && !s.noParty && !!(s.partyId || s.ownerId);
+
 export const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
 
 // ---- A blank character ---------------------------------------------------

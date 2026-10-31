@@ -6,13 +6,13 @@
 //  SRD 5.1 is © Wizards of the Coast, licensed under CC BY 4.0.
 //  Data via the 5e-bits/5e-database project (MIT licence).
 // =====================================================================
-import { ABILITIES, abilityMod, blankCharacter, normalize } from "./rules.js?v=1.9.1";
-import { roll } from "./dice.js?v=1.9.1";
+import { ABILITIES, abilityMod, blankCharacter, normalize } from "./rules.js?v=1.9.3";
+import { roll } from "./dice.js?v=1.9.3";
 
 let cache = null;
 export async function loadBestiary() {
   if (cache) return cache;
-  const res = await fetch(new URL("../data/bestiary.json?v=1.9.1", import.meta.url));
+  const res = await fetch(new URL("../data/bestiary.json?v=1.9.3", import.meta.url));
   cache = await res.json();
   return cache;
 }

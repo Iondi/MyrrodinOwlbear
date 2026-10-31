@@ -101,6 +101,8 @@ button.primary b { color: #fff3d6; }
 .chk input:checked::after { content: ""; width: 4px; height: 8px; border: solid #1b1622; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
 .chk input:disabled { background: var(--sunken); border-color: var(--line); }
 .chk input:disabled:checked { background: var(--gold); }
+.chk.campaign { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.chk.campaign.on { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
 
 .badge, .pill { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); border: 1px solid #d8b46a40; white-space: nowrap; }
 .pill b { color: var(--text); }
@@ -375,7 +377,11 @@ button.stat:hover b { color: var(--gold); }
 .version-tag { text-align: center; font-size: 10px; color: var(--faint); margin: 0 0 12px; letter-spacing: .06em; }
 
 /* ---------- Myr'rodin menu (tabs) ---------- */
-.party-page { min-height: 100vh; }
+html:has(body.party-page) { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #d8b46a66 transparent; }
+.party-page { min-height: 100vh; overflow: visible; }
+html:has(body.party-page)::-webkit-scrollbar { width: 8px; }
+html:has(body.party-page)::-webkit-scrollbar-thumb { background: #d8b46a55; border-radius: 8px; }
+html:has(body.party-page)::-webkit-scrollbar-thumb:hover { background: #d8b46a99; }
 .menu-tabs { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-bottom: 1px solid var(--line); }
 .menu-tabs button { position: relative; background: none; border: none; border-radius: 0; padding: 10px 4px 9px; justify-content: center; color: var(--muted); font-size: 13px; border-bottom: 2px solid transparent; }
 .menu-tabs button:hover { background: none; color: var(--text); }

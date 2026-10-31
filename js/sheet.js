@@ -1,13 +1,13 @@
 // The character sheet window.
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
-  derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.9.1";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.1";
-import * as B from "./bridge.js?v=1.9.1";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.1";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.1";
-import { enqueue as playDice } from "./diceanim.js?v=1.9.1";
+  derive, fmt, blankCharacter, normalize, abilityMod, inParty,
+} from "./rules.js?v=1.9.3";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.9.3";
+import * as B from "./bridge.js?v=1.9.3";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary } from "./gsheet.js?v=1.9.3";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.9.3";
+import { enqueue as playDice } from "./diceanim.js?v=1.9.3";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -158,6 +158,7 @@ function header() {
     <div class="hero-actions">
       <span class="save-state" id="save-state">${canEdit ? "Saved" : "View only"}</span>
       ${state.googleSheet?.id ? `<button class="ghost gs-badge ${state.googleSheet.lastError ? "bad" : ""}" data-action="gsync" ${canEdit ? "" : "disabled"} title="${esc(state.googleSheet.lastError || `Linked to Google Sheets. Last synced ${ago(state.googleSheet.lastSync)}.`)}"><span class="gs-dot"></span>${syncing ? "Syncing…" : "Google Sheet"}</button>` : ""}
+      ${self?.role === "GM" && B.inOBR ? `<label class="chk campaign ${inParty(state) ? "on" : ""}" title="Keep this character in the campaign party: saved with the room and carried to every scene"><input type="checkbox" data-local="campaign" ${inParty(state) ? "checked" : ""}/><span>Campaign party</span></label>` : ""}
       <label class="chk private" title="Only you and the GM see your rolls"><input type="checkbox" data-local="private" ${privateRolls ? "checked" : ""}/><span>Private rolls</span></label>
       ${canEdit ? `<button class="ghost" data-action="longrest" title="Restore HP and mana">Long rest</button>` : ""}
       ${B.inOBR ? `<button class="ghost icon" data-action="close" title="Close">✕</button>` : ""}
@@ -446,10 +447,10 @@ function tabSettings() {
       ${googlePanel()}
       <div class="panel">
         <div class="panel-head"><h3>Party</h3></div>
-        ${state.partyId || state.ownerId
-          ? `<p class="small">✓ <b>In the party.</b> This character is saved with the room, so it carries over to new scenes. Drop a token with the same picture or name on any map and this sheet attaches by itself.</p>`
-          : `<p class="muted small">Not in the party. Set an <b>Owner</b> below to make this a player character; it's then saved with the room and follows you between scenes.</p>`}
-        ${isGM && !state.ownerId ? `<button class="small" data-action="joinparty">${state.partyId ? "Remove from party" : "Add to party (NPC companion)"}</button>` : ""}
+        ${inParty(state)
+          ? `<p class="small">✓ <b>In the campaign party.</b> This character is saved with the room, so it carries over to new scenes. Drop a token with the same picture or name on any map and this sheet attaches by itself.</p>`
+          : `<p class="muted small">Not in the campaign party. The GM can tick <b>Campaign party</b> at the top of the sheet to save it with the room so it follows you between scenes. Sheets with an owner join automatically.</p>`}
+        ${isGM ? `<button class="small" data-action="joinparty">${inParty(state) ? "Take out of the campaign party" : "Add to the campaign party"}</button>` : ""}
       </div>
       ${isGM ? `<div class="panel">
         <div class="panel-head"><h3>Who can edit</h3></div>
@@ -569,12 +570,30 @@ async function saveNow() {
 
 function commit() { render(); scheduleSave(); }
 
+// GM: put this character in (or take it out of) the campaign party.
+async function setCampaignParty(on) {
+  if (on) {
+    delete state.noParty;
+    state.partyId = state.partyId || `pc-${Math.random().toString(36).slice(2, 9)}`;
+    commit();
+    toast("In the campaign party. It's saved with the room and follows you to every scene.", "good");
+  } else {
+    const pid = state.partyId;
+    delete state.partyId;
+    state.noParty = true;
+    commit();
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.9.3"); await removeMember(pid); }
+    toast("Taken out of the campaign party.");
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Editing
 // ---------------------------------------------------------------------------
 function onEdit(e) {
   const el = e.target;
   if (el.dataset?.local === "private") { privateRolls = el.checked; return; }
+  if (el.dataset?.local === "campaign") { if (e.type === "change") setCampaignParty(el.checked); return; }
   if (!el.dataset?.path || !canEdit) return;
   let v;
   if (el.type === "checkbox") v = el.checked;
@@ -660,10 +679,7 @@ app.addEventListener("click", async (e) => {
       toast("Long rest taken: HP and mana restored.", "good");
       commit(); break;
     case "export": showExport(); break;
-    case "joinparty":
-      if (state.partyId) { const { removeMember } = await import("./roster.js?v=1.9.1"); await removeMember(state.partyId); delete state.partyId; toast("Removed from the party."); }
-      else { state.partyId = `pc-${Math.random().toString(36).slice(2, 9)}`; toast("Added to the party. It'll be saved with the room in a moment.", "good"); }
-      commit(); break;
+    case "joinparty": setCampaignParty(!inParty(state)); break;
     case "gsync": syncNow(false); break;
     case "learnlib": {
       const sp = (window.__libList || [])[Number(arg)];

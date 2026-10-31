@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.9.1";
-import * as C from "./combat.js?v=1.9.1";
-import { normalize } from "./rules.js?v=1.9.1";
-import * as Roster from "./roster.js?v=1.9.1";
+import * as B from "./bridge.js?v=1.9.3";
+import * as C from "./combat.js?v=1.9.3";
+import { normalize, inParty } from "./rules.js?v=1.9.3";
+import * as Roster from "./roster.js?v=1.9.3";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -61,7 +61,7 @@ function partyFrames() {
     return l ? { ...l, c: normalize(l.sheet) } : { id: null, image: m.token?.image?.url, c: Roster.sheetFor(m) };
   });
   const ids = new Set(Object.keys(roster.members || {}));
-  const unsaved = [...sheets.values()].filter((s) => s.sheet?.ownerId && !ids.has(s.sheet.partyId)).map((s) => ({ ...s, c: normalize(s.sheet) }));
+  const unsaved = [...sheets.values()].filter((s) => inParty(s.sheet) && !ids.has(s.sheet.partyId)).map((s) => ({ ...s, c: normalize(s.sheet) }));
   const party = [...fromRoster, ...unsaved]
     .filter((p) => !p.c.gmOnly)
     .sort((a, b) => (a.c.ownerId === self.id ? -1 : b.c.ownerId === self.id ? 1 : a.c.name.localeCompare(b.c.name)));
