@@ -1,16 +1,16 @@
-// The initiative tracker that pops up on the right when combat starts.
-import * as B from "./bridge.js?v=1.5.0";
-import * as C from "./combat.js?v=1.5.0";
-import { normalize } from "./rules.js?v=1.5.0";
+// The Combat tab of the Myr'rodin menu: initiative order, joining, and the
+// GM's turn controls. mountCombat(element) draws it into the menu.
+import * as B from "./bridge.js?v=1.7.0";
+import * as C from "./combat.js?v=1.7.0";
+import { normalize } from "./rules.js?v=1.7.0";
 
-const root = document.getElementById("trk");
+let root = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const num = (v) => Number(v) || 0;
 
 let self = null;
 let state = null;
 let sheets = new Map(); // itemId -> { name, image, sheet }
-let minimized = false;
 let editing = null;     // entry id whose initiative the GM is editing
 let endArmed = false;
 let busy = false;
@@ -63,20 +63,14 @@ function render() {
   const head = `<div class="trk-head">
       <span class="trk-sigil" aria-hidden="true"></span>
       <span class="trk-title">${state?.active ? `Round ${state.round}` : "Initiative"}</span>
-      <span class="trk-head-tools">
-        <button class="x" data-act="min" title="${minimized ? "Expand" : "Minimize"}">${minimized ? "▾" : "▴"}</button>
-        <button class="x" data-act="close" title="Hide (reopen from the Myr'rodin panel)">✕</button>
-      </span>
     </div>`;
-
-  if (minimized) { root.innerHTML = head; fit(); return; }
 
   if (!state?.active) {
-    root.innerHTML = `${head}<div class="trk-empty">
+    root.innerHTML = `<div class="trk">${head}<div class="trk-empty">
       <p>No fight right now.</p>
       ${isGM() ? `<button class="primary" data-act="start">⚔ Start combat</button><p class="muted small">Everyone gets asked to join. Monsters and NPCs on the board roll automatically.</p>` : ""}
-    </div>`;
-    fit(); return;
+    </div></div>${hudSettings()}`;
+    return;
   }
 
   const list = C.ordered(state);
@@ -110,28 +104,29 @@ function render() {
       </div>
     </div>` : "";
 
-  root.innerHTML = `${head}${joinBanner}${yourTurn}
+  root.innerHTML = `<div class="trk">${head}${joinBanner}${yourTurn}
     ${list.length ? `<ol class="trk-list">${list.map((e, i) => row(e, i, list)).join("")}</ol>` : `<p class="trk-sub center">No one has rolled yet.</p>`}
-    ${gmWaiting}${gmControls}`;
+    ${gmWaiting}${gmControls}</div>${hudSettings()}`;
   const ed = root.querySelector(".trk-edit");
   if (ed) { ed.focus(); ed.select(); }
-  fit();
 }
 
-// Grow or shrink the window to fit what's in it.
-let lastH = 0;
-async function fit() {
-  if (!B.inOBR) return;
-  const max = Math.max(200, (await B.OBR.viewport.getHeight()) - 110);
-  const h = Math.min(max, Math.ceil(root.getBoundingClientRect().height) + 6);
-  if (Math.abs(h - lastH) > 2) { lastH = h; B.OBR.popover.setHeight(C.TRACKER_POPOVER, h).catch(() => {}); }
+// Each player chooses whether the turn-order strip shows on their screen, and where.
+const CORNERS = [["tr", "Top right"], ["tl", "Top left"], ["br", "Bottom right"], ["bl", "Bottom left"]];
+function hudSettings() {
+  const on = B.hudOn();
+  const corner = B.hudCorner();
+  return `<div class="hud-settings">
+    <label class="chk"><input type="checkbox" data-hud="toggle" ${on ? "checked" : ""}/><span>Show turn order on my screen during combat</span></label>
+    <div class="hud-corners" ${on ? "" : "hidden"}>${CORNERS.map(([k, label]) => `<button class="chip-btn ${corner === k ? "on" : ""}" data-hud="${k}">${label}</button>`).join("")}</div>
+    <p class="muted small">The strip can't be clicked, so it never gets in the way of the map. Control the fight from this tab.</p>
+  </div>`;
 }
+
 
 async function act(name, id) {
   if (name !== "end") endArmed = false;
   switch (name) {
-    case "min": minimized = !minimized; render(); break;
-    case "close": C.closeTracker(); break;
     case "start": await C.startCombat(); break;
     case "begin": await C.begin(); break;
     case "next": await C.nextTurn(); break;
@@ -155,9 +150,15 @@ async function act(name, id) {
   }
 }
 
+function wire() {
 root.addEventListener("click", (e) => {
+  const h = e.target.closest("[data-hud]");
+  if (h && h.dataset.hud !== "toggle") { B.setHudCorner(h.dataset.hud); render(); return; }
   const b = e.target.closest("[data-act]");
   if (b && !b.disabled) act(b.dataset.act, b.dataset.id);
+});
+root.addEventListener("change", (e) => {
+  if (e.target.matches('[data-hud="toggle"]')) { B.setHudOn(e.target.checked); render(); }
 });
 root.addEventListener("keydown", async (e) => {
   const ed = e.target.closest?.("[data-edit]");
@@ -171,6 +172,7 @@ root.addEventListener("focusout", async (e) => {
   const v = ed.value; const id = ed.dataset.edit; editing = null;
   if (v !== "") await C.setInit(id, v); else render();
 });
+}
 
 async function refreshSheets() {
   try {
@@ -180,11 +182,17 @@ async function refreshSheets() {
   render();
 }
 
-(async () => {
+// Returns a function that tells the caller about combat changes (for the tab badge).
+export async function mountCombat(el, onState = () => {}) {
+  root = el;
+  wire();
   await B.whenReady();
   self = await B.me();
   state = await C.getCombat().catch(() => null);
+  onState(state, self);
   await refreshSheets();
-  C.onCombatChange((s) => { state = s; if (!s) editing = null; render(); });
-  B.onSheetsChange(refreshSheets);
-})();
+  C.onCombatChange((s) => { state = s; if (!s) editing = null; onState(s, self); render(); });
+  try { B.onSheetsChange(refreshSheets); } catch { /* scene not ready */ }
+  if (B.inOBR) B.OBR.scene.onReadyChange((ready) => { if (ready) { C.getCombat().then((s) => { state = s; onState(s, self); refreshSheets(); }).catch(() => {}); try { B.onSheetsChange(refreshSheets); } catch { /* ignore */ } } });
+}
+export const myTurnIn = (st, me, sheetMap) => !!st?.currentId && sheetMap?.get?.(st.currentId)?.sheet?.ownerId === me?.id;

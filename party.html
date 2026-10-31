@@ -7,23 +7,51 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=1.6.0" />
+  <link rel="stylesheet" href="css/style.css?v=1.7.0" />
+  <link rel="stylesheet" href="css/tracker.css?v=1.7.0" />
 </head>
 <body class="party-page">
   <header class="party-head">
     <div class="sigil small" aria-hidden="true"></div>
     <div><h1>Myr'rodin</h1><p class="muted small" id="party-sub">Party</p></div>
   </header>
-  <section id="combat-bar" class="combat-bar"></section>
-  <section id="party"></section>
-  <section class="log-wrap">
-    <div class="panel-head bare"><h3>Roll log</h3><span class="head-tools"><label class="chk" title="Show the celestial dice when anyone rolls (this browser only)"><input type="checkbox" id="dice-anim" checked /><span>Dice animation</span></label><button class="link" id="clear-log">Clear</button></span></div>
+  <nav class="menu-tabs" role="tablist">
+    <button role="tab" data-tab="party">Party</button>
+    <button role="tab" data-tab="combat">Combat<span class="tab-dot" id="combat-dot"></span></button>
+    <button role="tab" data-tab="inventory">Inventory</button>
+    <button role="tab" data-tab="dice">Dice</button>
+  </nav>
+  <section class="menu-page" data-page="party">
+    <div id="combat-bar" class="combat-bar"></div>
+    <div id="party"></div>
+  </section>
+  <section class="menu-page" data-page="combat"><div id="combat-root"></div></section>
+  <section class="menu-page" data-page="inventory"><div id="inv-root" class="inv"></div></section>
+  <section class="menu-page log-wrap" data-page="dice">
+    <div class="panel-head bare"><h3>Quick roll</h3><label class="chk" title="Show the celestial dice when anyone rolls (this browser only)"><input type="checkbox" id="dice-anim" checked /><span>Dice animation</span></label></div>
     <div class="dice-box">
-      <input id="free-dice" placeholder="Quick roll, e.g. 2d6+3" aria-label="Dice to roll" />
+      <input id="free-dice" placeholder="e.g. 2d6+3, 1d20, 4d8" aria-label="Dice to roll" />
       <button class="primary" id="free-roll">Roll</button>
     </div>
+    <div class="quick-dice">
+      <button data-q="1d4">d4</button><button data-q="1d6">d6</button><button data-q="1d8">d8</button><button data-q="1d10">d10</button><button data-q="1d12">d12</button><button data-q="1d20">d20</button><button data-q="1d100">d100</button>
+    </div>
+    <div class="panel-head bare"><h3>Roll log</h3><button class="link" id="clear-log">Clear</button></div>
     <ol id="log"></ol>
   </section>
-  <script type="module" src="js/party.js?v=1.6.0"></script>
+  <p class="version-tag" id="version">Myr'rodin System v1.7.0</p>
+  <script>
+  // Always run the newest upload: if GitHub's copy of the extension is newer
+  // than this page, reload this page fresh instead of using a cached copy.
+  (function () {
+    var V = "1.7.0", MAIN = "js/party.js";
+    var q = new URLSearchParams(location.search);
+    function go() { var s = document.createElement("script"); s.type = "module"; s.src = MAIN + "?v=" + V; document.body.appendChild(s); }
+    fetch("manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) {
+      if (m.version && m.version !== V && q.get("fresh") !== m.version) { q.set("fresh", m.version); location.replace(location.pathname + "?" + q.toString() + location.hash); }
+      else go();
+    }).catch(go);
+  })();
+</script>
 </body>
 </html>

@@ -1,5 +1,17 @@
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8" /><title>Myr'rodin background</title></head>
-<body><script type="module" src="js/background.js?v=1.6.0"></script></body>
+<body><script>
+  // Always run the newest upload: if GitHub's copy of the extension is newer
+  // than this page, reload this page fresh instead of using a cached copy.
+  (function () {
+    var V = "1.7.0", MAIN = "js/background.js";
+    var q = new URLSearchParams(location.search);
+    function go() { var s = document.createElement("script"); s.type = "module"; s.src = MAIN + "?v=" + V; document.body.appendChild(s); }
+    fetch("manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) {
+      if (m.version && m.version !== V && q.get("fresh") !== m.version) { q.set("fresh", m.version); location.replace(location.pathname + "?" + q.toString() + location.hash); }
+      else go();
+    }).catch(go);
+  })();
+</script></body>
 </html>

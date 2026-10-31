@@ -75,20 +75,36 @@ While the GM has the room open, linked sheets re-sync about once a minute. Anyon
 
 ---
 
+## The Myr'rodin menu
+
+Click the **Myr'rodin** button (top left) to open the menu. It has four tabs, and clicking anywhere on the map closes it again, so it never locks the screen.
+
+- **Party**: everyone's HP, mana and psi. The GM gets Damage/Heal buttons and **⚔ Start combat**.
+- **Combat**: initiative order, joining, and the GM's turn controls.
+- **Inventory**: your character's gear and coins, plus the shared **party stash**. The GM can pick any character to see their inventory.
+- **Dice**: quick rolls (one-tap d4 to d100), the roll log and the dice animation switch.
+
 ## Combat & initiative
 
-1. GM: open the **Myr'rodin** panel and click **⚔ Start combat**.
-2. An **Initiative** window pops up on the right for everyone.
-   - Monsters, NPCs, and any sheet without an owner roll their initiative automatically.
-   - Each player sees **"Combat is starting! Would you like to join?"** with **Join & roll** for their own character. The roll shows as celestial dice for the whole table.
-   - If a player is away, the GM can click **Roll for them**.
-3. The order sorts itself: highest first, ties go to the higher Dexterity score.
-4. GM clicks **Begin round 1**, then **Done — next** at the end of each turn. The round counter goes up when it wraps. **◀** steps back if you skip someone by mistake.
-5. Everyone gets a notification when the turn changes, and the active player sees **"It's your turn"**.
+1. GM: **Party → ⚔ Start combat** (or the Combat tab).
+2. Everyone's menu opens on the **Combat** tab.
+   - Monsters, NPCs and sheets without an owner roll automatically.
+   - Players see **"Combat is starting! Would you like to join?"** with **Join & roll**.
+   - The GM can **Roll for them** for anyone who's away.
+3. The order sorts itself (highest first, ties to higher Dexterity). The GM clicks **Begin round 1**, then **Done — next** each turn. **◀** steps back.
+4. A **turn-order strip** appears on screen during the fight. It's click-through, so it never blocks the map or Owlbear's buttons. Each player can turn it off or move it to any corner from the Combat tab.
+5. Everyone gets a notification when the turn changes.
 
-GM extras: click an initiative number to change it, **✕** removes someone, **+ Add new tokens** pulls in sheets placed after combat started, and **End combat** (click twice) closes it for everyone. Players see HP bars for player characters only; the GM sees everyone's.
+GM extras: click an initiative number to change it, ✕ removes someone, **+ Add new tokens** pulls in sheets placed mid-fight, **End combat** (click twice) ends it.
 
-For a sheet to count as a player's, set its **Owner** on the Sheet tab. Anyone can hide the window with ✕ and bring it back with **Show initiative** in the Myr'rodin panel.
+## Party stash
+
+One loot list for the whole group. It lives with the room, so it follows you between scenes.
+
+- The GM adds loot and coins, and can edit or remove anything.
+- Players click **Take** to move an item into their character's gear, or **⇢ Stash** on their own gear to put it back.
+- **Split coins among the party** shares the stash's coins evenly between every sheet that has an owner. Leftover coins stay in the stash.
+- Items taken from the stash stay on Google-linked sheets through syncs.
 
 ---
 
@@ -156,10 +172,13 @@ css/dice.css         the celestial dice look
 dice.html            the click-through layer over the map while dice roll
 js/diceanim.js       draws and animates the dice
 js/dicepage.js       runs the layer over the map
-tracker.html         the initiative window
-js/tracker.js        draws the initiative window
+js/tracker.js        the Combat tab
+js/inventory.js      the Inventory tab
+js/stash.js          the shared party stash
+hud.html, js/hud.js  the click-through turn-order strip
 js/combat.js         turn order, joining and rolling
-css/tracker.css      the initiative window's look
+css/tracker.css      the Combat tab's look
+css/hud.css          the turn-order strip's look
 vendor/obr-sdk.js    Owlbear's official SDK (v3.1.0), bundled
 vendor/fflate.js     small unzip library (reads Google's .xlsx download)
 characters/          example character (Lyrith Taewen)

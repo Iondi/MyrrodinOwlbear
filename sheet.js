@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES,
   derive, fmt, blankCharacter, normalize, abilityMod,
-} from "./rules.js?v=1.5.0";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.5.0";
-import * as B from "./bridge.js?v=1.5.0";
-import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.5.0";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.5.0";
-import { enqueue as playDice } from "./diceanim.js?v=1.5.0";
+} from "./rules.js?v=1.7.0";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.7.0";
+import * as B from "./bridge.js?v=1.7.0";
+import { sheetIdFromUrl, syncFromGoogle } from "./gsheet.js?v=1.7.0";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.7.0";
+import { enqueue as playDice } from "./diceanim.js?v=1.7.0";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -315,6 +315,14 @@ function tabCombat() {
     <div class="panel"><div class="panel-head"><h3>Attack bonuses & notes</h3></div>${area("attackNotes", 4, "Breath weapon, special attacks, reminders…")}</div>`;
 }
 
+// A spell note that names an ability ("Wisdom", "WIS") means "cast with that ability".
+function noteAbility(note) {
+  const n = String(note || "").trim().toLowerCase();
+  if (!n) return null;
+  const hit = ABILITIES.find((a) => n === a.key || n === a.name.toLowerCase() || n === a.short.toLowerCase());
+  return hit ? hit.key : null;
+}
+
 function tabMagic() {
   const spells = state.magic.spells.map((s, i) => ({ s, i })).sort((a, b) => num(a.s.level) - num(b.s.level) || a.i - b.i);
   let lastLevel = null;
@@ -326,7 +334,9 @@ function tabMagic() {
     <div class="card spell ${s.learned ? "" : "unlearned"}">
       <div class="card-head">
         ${inp(`magic.spells.${i}.name`, { cls: "card-title", ph: "Spell name", label: "Spell name" })}
-        <span class="badge">${lvl.label}</span>
+        <span class="spell-level"><span class="badge">${lvl.label}</span>
+          ${s.note || canEdit ? `<span class="spell-note ${noteAbility(s.note) ? "is-ability" : ""} ${s.note ? "" : "empty"}" title="${noteAbility(s.note) ? `Cast with ${ABILITIES.find((a) => a.key === noteAbility(s.note)).name}` : "Note"}">${inp(`magic.spells.${i}.note`, { cls: "note-input", ph: "Note", label: "Spell note" })}</span>` : ""}
+        </span>
         ${chk(`magic.spells.${i}.learned`, "Learned")}
         ${canEdit ? `<button class="x" data-action="del:magic.spells.${i}" title="Remove">✕</button>` : ""}
       </div>
@@ -344,7 +354,7 @@ function tabMagic() {
       </div>
       <div class="card-flags">${chk(`magic.spells.${i}.amplifiable`, "Amplifiable")}${chk(`magic.spells.${i}.concentration`, "Concentration")}</div>
       <div class="roll-row">
-        <button class="primary roll" data-roll="cast:${i}">Cast <b>${num(s.mana)} mana</b></button>
+        <button class="primary roll" data-roll="cast:${i}">Cast <b>${num(s.mana)} mana</b>${noteAbility(s.note) ? ` <span class="cast-with">${ABILITIES.find((a) => a.key === noteAbility(s.note)).short}</span>` : ""}</button>
         ${isDiceExpression(s.damage) ? `<button class="roll" data-roll="spelldmg:${i}">Damage <b>${esc(s.damage)}</b></button>` : ""}
       </div>
     </div>`;
@@ -474,6 +484,7 @@ function googlePanel() {
     <p class="small"><a href="${esc(g.url || `https://docs.google.com/spreadsheets/d/${g.id}`)}" target="_blank" rel="noopener">Open the Google Sheet ↗</a> <span class="muted">· last synced ${ago(g.lastSync)}</span></p>
     ${g.lastError ? `<p class="small warn-text">${esc(g.lastError)}</p>` : ""}
     ${missing}
+    ${(g.warnings || []).map((w) => `<p class="small muted">ℹ ${esc(w)}</p>`).join("")}
     ${chk("googleSheet.auto", "Keep syncing automatically (about once a minute while the GM is in the room)")}
     <p class="muted small">Edit stats in the Google Sheet; changes made here to synced fields get replaced on the next sync. Current HP, mana and psi used in play stay here, unless the Google Sheet's own Current HP or Mana Used changes.</p>
   </div>`;
@@ -587,7 +598,7 @@ app.addEventListener("click", async (e) => {
     case "addattack": state.attacks.push({ name: "", range: "5 ft", ability: "str", damage: "1d8", damageType: "", proficient: true, equipped: true, graze: false, bonus: 0, notes: "" }); commit(); break;
     case "addspell": {
       const lvl = SPELL_LEVELS[num(arg)];
-      state.magic.spells.push({ level: lvl.level, name: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
+      state.magic.spells.push({ level: lvl.level, name: "", note: "", type: "", castTime: "1 Action", range: "", damage: "", damageType: "", save: "", mana: lvl.mana, dc: lvl.dc, duration: "", condition: "", amplifiable: false, concentration: false, learned: true });
       commit(); break;
     }
     case "addpower": state.psionics.push({ name: "", type: "", castTime: "1 Action", range: "", cost: 1, damage: "", duration: "Instantaneous", save: "", learned: true }); commit(); break;
@@ -718,9 +729,11 @@ function castSpell(i, d) {
     commit();
     return;
   }
-  const r = roll(d20(d.castMod));
+  const castWith = noteAbility(s.note);
+  const castMod = castWith ? d.mods[castWith] + d.pb : d.castMod;
+  const r = roll(d20(castMod));
   const ok = r.total >= dc;
-  send(`Cast ${name} (DC ${dc})`, r, { outcome: ok ? "Success" : "Failed" });
+  send(`Cast ${name}${castWith ? ` with ${ABILITIES.find((a) => a.key === castWith).short}` : ""} (DC ${dc})`, r, { outcome: ok ? "Success" : "Failed" });
   if (ok || HOUSE_RULES.manaSpentOnFailedCast) state.mana.current = num(state.mana.current) - cost;
   if (ok && isDiceExpression(s.damage)) setTimeout(() => send(`${name} — damage${s.damageType ? ` (${s.damageType})` : ""}`, roll(s.damage)), 350);
   commit();

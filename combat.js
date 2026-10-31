@@ -4,13 +4,12 @@
 //  sees the same order. The GM's computer makes the changes; players ask
 //  to join by sending a message, and the GM's side adds them.
 // =====================================================================
-import { OBR, NS, inOBR, listSheets, broadcastRoll } from "./bridge.js?v=1.5.0";
-import { derive, normalize } from "./rules.js?v=1.5.0";
-import { roll, d20 } from "./dice.js?v=1.5.0";
+import { OBR, NS, inOBR, listSheets, broadcastRoll } from "./bridge.js?v=1.7.0";
+import { derive, normalize } from "./rules.js?v=1.7.0";
+import { roll, d20 } from "./dice.js?v=1.7.0";
 
 export const COMBAT_KEY = `${NS}/combat`;
 export const JOIN_CHANNEL = `${NS}/combat-join`;
-export const TRACKER_POPOVER = `${NS}/tracker`;
 
 // ---- Reading and writing the shared combat state ----------------------
 const PREVIEW_KEY = "myrrodin-preview-combat";
@@ -184,32 +183,4 @@ export async function rollFor(entryId) {
   if (!found) return;
   const r = rollInitiative(found.sheet);
   await applyJoin({ id: entryId, name: normalize(found.sheet).name, init: r.init, dex: r.dex, detail: `${r.detail} (rolled by GM)` });
-}
-
-// ---- The tracker window on the right-hand side ----------------------------
-export async function openTracker() {
-  if (!inOBR) { window.open(new URL("../tracker.html", import.meta.url).href, "myrrodin-tracker", "width=320,height=620"); return; }
-  const width = await OBR.viewport.getWidth();
-  await OBR.popover.open({
-    id: TRACKER_POPOVER,
-    url: new URL("../tracker.html?v=1.5.0", import.meta.url).href,
-    width: 310,
-    height: 420,
-    anchorReference: "POSITION",
-    anchorPosition: { left: Math.max(330, width - 16), top: 72 },
-    anchorOrigin: { horizontal: "RIGHT", vertical: "TOP" },
-    transformOrigin: { horizontal: "RIGHT", vertical: "TOP" },
-    disableClickAway: true,
-    hidePaper: true,
-  });
-}
-export async function closeTracker() {
-  if (!inOBR) { window.close(); return; }
-  const st = await getCombat().catch(() => null);
-  if (st?.id) await OBR.broadcast.sendMessage(`${NS}/sheet-tracker-closed`, st.id, { destination: "LOCAL" }).catch(() => {});
-  await OBR.popover.close(TRACKER_POPOVER);
-}
-export async function reopenTracker() {
-  if (inOBR) await OBR.broadcast.sendMessage(`${NS}/sheet-tracker-closed`, "", { destination: "LOCAL" }).catch(() => {});
-  await openTracker();
 }
