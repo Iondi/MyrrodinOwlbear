@@ -1,11 +1,12 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.9.6";
-import { normalize, inParty } from "./rules.js?v=1.9.6";
-import { roll } from "./dice.js?v=1.9.6";
-import * as Combat from "./combat.js?v=1.9.6";
-import { mountCombat } from "./tracker.js?v=1.9.6";
-import { mountInventory } from "./inventory.js?v=1.9.6";
-import * as Roster from "./roster.js?v=1.9.6";
+import * as B from "./bridge.js?v=1.10.4";
+import { normalize, inParty } from "./rules.js?v=1.10.4";
+import { roll } from "./dice.js?v=1.10.4";
+import * as Combat from "./combat.js?v=1.10.4";
+import { mountCombat } from "./tracker.js?v=1.10.4";
+import { mountInventory } from "./inventory.js?v=1.10.4";
+import { mountHandouts } from "./handoutstab.js?v=1.10.4";
+import * as Roster from "./roster.js?v=1.10.4";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -195,7 +196,7 @@ function renderCombatBar() {
 combatBar.addEventListener("click", (e) => { const g = e.target.closest("[data-goto]"); if (g) showTab(g.dataset.goto); });
 
 // ---- Tabs -------------------------------------------------------------------
-const TABS = ["party", "combat", "inventory", "dice"];
+const TABS = ["party", "combat", "inventory", "handouts", "dice"];
 function showTab(name) {
   if (!TABS.includes(name)) name = "party";
   B.setMenuTab(name);
@@ -215,20 +216,19 @@ document.querySelector(".quick-dice").addEventListener("click", (e) => {
   freeRoll();
 });
 
+
 // Party frames settings (bottom of the Party tab).
 const PF_CORNERS = [["tl", "Top left"], ["bl", "Bottom left"], ["tr", "Top right"], ["br", "Bottom right"]];
 function renderPfSettings() {
   let box = document.getElementById("pf-settings");
   if (!box) { box = document.createElement("div"); box.id = "pf-settings"; box.className = "hud-settings pf-settings"; document.querySelector('[data-page="party"]').appendChild(box); }
   const on = B.partyFramesOn(), corner = B.partyCorner();
-  box.innerHTML = `<label class="chk"><input type="checkbox" id="pf-toggle" ${on ? "checked" : ""}/><span>Show party frames on my screen</span></label>
+  box.innerHTML = `<label class="chk"><input type="checkbox" id="pf-toggle" ${on ? "checked" : ""}/><span>Show party frames on my screen (GM only)</span></label>
     <div class="hud-corners" ${on ? "" : "hidden"}>${PF_CORNERS.map(([k, l]) => `<button class="chip-btn ${corner === k ? "on" : ""}" data-pf="${k}">${l}</button>`).join("")}</div>
-    <p class="muted small">Everyone's HP, mana and AC, always on screen. Clicks pass through it to the map. Characters show up once their sheet has an owner.</p>`;
+    <p class="muted small">Everyone's HP, mana and AC, always on your screen. Only you see it; players don't. Clicks pass through it to the map. Characters show up once their sheet has an owner.</p>`;
   box.querySelector("#pf-toggle").addEventListener("change", (e) => { B.setPartyFramesOn(e.target.checked); renderPfSettings(); });
   box.querySelectorAll("[data-pf]").forEach((b) => b.addEventListener("click", () => { B.setPartyCorner(b.dataset.pf); renderPfSettings(); }));
 }
-renderPfSettings();
-
 function setCombatDot(st, me) {
   const dot = document.getElementById("combat-dot");
   if (!dot) return;
@@ -239,6 +239,13 @@ function setCombatDot(st, me) {
   renderLog();
   await B.whenReady();
   self = await B.me();
+  // Phones: Owlbear opens the menu at full height and cuts off the bottom, so
+  // shrink it to fit the screen; the rest scrolls.
+  if (B.inOBR && B.isPhone()) {
+    const fit = Math.max(320, Math.min(640, Math.round((window.screen?.height || 800) * 0.68)));
+    B.OBR.action.setHeight(fit).catch(() => {});
+  }
+  if (self.role === "GM") renderPfSettings();
   partyEl.innerHTML = `<p class="muted small" style="text-align:center">Gathering the party…</p>`;
   roster = await Roster.getRoster().catch(() => roster);
   Roster.onRosterChange((r) => { roster = r; if (self) renderParty(); });
@@ -248,6 +255,7 @@ function setCombatDot(st, me) {
   Combat.onCombatChange((st) => { combatState = st; renderCombatBar(); });
   mountCombat(document.getElementById("combat-root"), (st, me) => setCombatDot(st, me)).catch((err) => console.error(err));
   mountInventory(document.getElementById("inv-root")).catch((err) => console.error(err));
+  mountHandouts(document.getElementById("ho-root")).catch((err) => console.error(err));
   let unsubscribe = null;
   const watch = () => { try { unsubscribe?.(); unsubscribe = B.onSheetsChange(safeRefresh); } catch { /* scene not ready yet */ } };
   watch();

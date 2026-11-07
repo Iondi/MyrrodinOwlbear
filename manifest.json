@@ -1,6 +1,6 @@
 {
   "name": "Myr'rodin System",
-  "version": "1.10.3",
+  "version": "1.10.4",
   "manifest_version": 1,
   "author": "emberbelle",
   "description": "Character sheets, dice and party tracking for the Myr'rodin homebrew system.",
@@ -8,7 +8,7 @@
   "background_url": "https://iondi.github.io/MyrrodinOwlbear/background.html",
   "action": {
     "title": "Myr'rodin",
-    "icon": "https://iondi.github.io/MyrrodinOwlbear/icon.png",
+    "icon": "https://iondi.github.io/MyrrodinOwlbear/action-icon.svg",
     "popover": "https://iondi.github.io/MyrrodinOwlbear/party.html",
     "width": 380,
     "height": 640

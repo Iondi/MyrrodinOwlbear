@@ -8,8 +8,8 @@
 //  between players' copies still work. Anything it can't find is listed
 //  on the sheet so you know what didn't sync.
 // =====================================================================
-import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.9.6";
-import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.9.6";
+import { unzipSync, strFromU8 } from "../vendor/fflate.js?v=1.10.4";
+import { ABILITIES, SKILLS, SPELL_LEVELS, derive } from "./rules.js?v=1.10.4";
 
 // ---------------------------------------------------------------------
 // Links and downloading
@@ -538,7 +538,6 @@ export function readCharacter(tabs) {
         let name = grid.get(r, t.col("name"));
         if (name === undefined || !isText(name)) name = grid.get(r, t.col("name") + 1);
         if (name === undefined || !isText(name) || isNum(name)) continue;
-        const split = splitNote(name);
         const mana = grid.get(r, t.col("mana cost"));
         const lvl = level ?? (SPELL_LEVELS.find((l) => l.mana === toNum(mana))?.level ?? 1);
         const get = (k) => { const c = t.col(k); const v = c ? grid.get(r, c) : undefined; return v === undefined || !isText(v) || isNone(v) ? "" : clean(v); };
@@ -557,8 +556,7 @@ export function readCharacter(tabs) {
         target.push({
           level: lvl,
           casts,
-          name: split.name,
-          note: split.note,
+          name: clean(name),
           type: get("type"),
           castTime: get("casting time"),
           range: get("range"),
@@ -685,16 +683,18 @@ export function mergeIntoSheet(current, imported, missing) {
     });
   }
   if (d.spells) {
-    const key = (sp) => `${sp.level}|${String(sp.name).trim().toLowerCase()}`;
+    // Spell names are kept whole ("Resistance - Wisdom"); older saves split off a note.
+    const full = (sp) => (sp.note ? `${sp.name} - ${sp.note}` : String(sp.name));
+    const key = (sp) => `${sp.level}|${full(sp).trim().toLowerCase().replace(/\s+/g, " ")}`;
     const old = new Map((c.magic?.spells || []).map((sp) => [key(sp), sp]));
     const merged = d.spells.map((sp) => {
       const o = old.get(key(sp));
       old.delete(key(sp));
       if (!o) return sp;
-      return { ...sp, casts: Math.max(Number(sp.casts) || 0, Number(o.casts) || 0), learned: !!(sp.learned || o.learned), note: sp.note || o.note || "" };
+      return { ...sp, casts: Math.max(Number(sp.casts) || 0, Number(o.casts) || 0), learned: !!(sp.learned || o.learned) };
     });
     // Spells picked up from the library in Owlbear stay until the sheet has them.
-    for (const o of old.values()) if (o.local) merged.push(o);
+    for (const o of old.values()) if (o.local) merged.push(o.note ? { ...o, name: full(o), note: undefined } : o);
     // Leave out empty fields so big spell lists still fit on a token.
     const compact = (sp) => Object.fromEntries(Object.entries(sp).filter(([k, v]) => v !== "" && v !== false && v !== undefined && !(k === "casts" && !v)));
     c.magic = { ...c.magic, spells: merged.map(compact) };

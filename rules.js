@@ -234,6 +234,12 @@ export function normalize(c) {
   out.equipment = out.equipment.map((e) => (typeof e === "string" ? { name: e, qty: 1, notes: "" } : e));
   delete out.combatDone;
   if (!Array.isArray(out.magic.spells)) out.magic.spells = [];
+  // Spell notes are now part of the name ("Resistance - Wisdom").
+  out.magic.spells = out.magic.spells.map((sp) => {
+    if (!sp || !sp.note) return sp;
+    const { note, ...rest } = sp;
+    return { ...rest, name: `${rest.name || ""} - ${note}`.replace(/^ - /, "") };
+  });
   if (!out.skills || typeof out.skills !== "object") out.skills = {};
   return out;
 }

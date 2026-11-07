@@ -1,12 +1,13 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, partyFramesOn, setMenuTab } from "./bridge.js?v=1.9.6";
-import { syncFromGoogle } from "./gsheet.js?v=1.9.6";
-import * as Combat from "./combat.js?v=1.9.6";
-import * as Stash from "./stash.js?v=1.9.6";
-import * as Roster from "./roster.js?v=1.9.6";
-import { normalize } from "./rules.js?v=1.9.6";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, partyFramesOn, isPhone, setMenuTab } from "./bridge.js?v=1.10.4";
+import { syncFromGoogle } from "./gsheet.js?v=1.10.4";
+import * as Combat from "./combat.js?v=1.10.4";
+import * as Stash from "./stash.js?v=1.10.4";
+import * as Roster from "./roster.js?v=1.10.4";
+import { normalize } from "./rules.js?v=1.10.4";
+import * as Handouts from "./handouts.js?v=1.10.4";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -73,7 +74,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.9.6"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.10.4"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -96,11 +97,12 @@ function watchCombat(self) {
   // The on-screen frames: a click-through layer that's open while the party
   // frames are switched on, or while a fight is on.
   const syncHud = async (st) => {
-    const want = partyFramesOn() || (!!st?.active && hudOn());
+    // GM only, and never on phones: players use the Myr'rodin menu instead.
+    const want = self.role === "GM" && !isPhone() && (partyFramesOn() || (!!st?.active && hudOn()));
     if (want && !hudOpen) {
       hudOpen = true;
       await OBR.modal.open({
-        id: HUD_MODAL, url: asset("hud.html?v=1.9.6"),
+        id: HUD_MODAL, url: asset("hud.html?v=1.10.4"),
         fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
       }).catch(() => { hudOpen = false; });
     } else if (!want && hudOpen) {
@@ -228,7 +230,17 @@ OBR.onReady(async () => {
   const self = await me();
 
   // ---- Google Sheets auto-sync (runs only on the GM's computer) ----
-  if (self.role === "GM") { startGoogleSync(); startNameFollow(); startRoster(); }
+  if (self.role === "GM") {
+    startGoogleSync(); startNameFollow(); startRoster();
+    // Handouts from Discord: the GM's computer checks the relay.
+    Handouts.startRelayPolling((st) => { try { localStorage.setItem("myrrodin-relay-status", JSON.stringify(st)); } catch { /* ignore */ } });
+  }
+  // A handout shown to everyone pops up on every screen.
+  OBR.broadcast.onMessage(Handouts.SHOW_CHANNEL, (e) => {
+    const h = e.data || {};
+    Handouts.viewHandout(h).catch(() => {});
+    OBR.notification.show(`📜 Handout: ${h.title || "a picture"}${h.by ? ` (from ${h.by})` : ""}`, "INFO");
+  });
 
   OBR.broadcast.onMessage(ROLL_CHANNEL, (event) => {
     const r = event.data || {};

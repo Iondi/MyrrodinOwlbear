@@ -1,8 +1,8 @@
 // The Combat tab of the Myr'rodin menu: initiative order, joining, and the
 // GM's turn controls. mountCombat(element) draws it into the menu.
-import * as B from "./bridge.js?v=1.9.6";
-import * as C from "./combat.js?v=1.9.6";
-import { normalize } from "./rules.js?v=1.9.6";
+import * as B from "./bridge.js?v=1.10.4";
+import * as C from "./combat.js?v=1.10.4";
+import { normalize } from "./rules.js?v=1.10.4";
 
 let root = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -126,10 +126,11 @@ function render() {
 // Each player chooses whether the turn-order strip shows on their screen, and where.
 const CORNERS = [["br", "Bottom right"], ["bl", "Bottom left"], ["tr", "Top right"], ["tl", "Top left"]];
 function hudSettings() {
+  if (!isGM()) return ""; // players don't get the on-screen strip
   const on = B.hudOn();
   const corner = B.hudCorner();
   return `<div class="hud-settings">
-    <label class="chk"><input type="checkbox" data-hud="toggle" ${on ? "checked" : ""}/><span>Show turn order on my screen during combat</span></label>
+    <label class="chk"><input type="checkbox" data-hud="toggle" ${on ? "checked" : ""}/><span>Show turn order on my screen during combat (GM only)</span></label>
     <div class="hud-corners" ${on ? "" : "hidden"}>${CORNERS.map(([k, label]) => `<button class="chip-btn ${corner === k ? "on" : ""}" data-hud="${k}">${label}</button>`).join("")}</div>
     <p class="muted small">The strip can't be clicked, so it never gets in the way of the map. Control the fight from this tab.</p>
   </div>`;
