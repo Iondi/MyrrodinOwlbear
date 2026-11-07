@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.10.3";
-import * as C from "./combat.js?v=1.10.3";
-import { normalize, inParty } from "./rules.js?v=1.10.3";
-import * as Roster from "./roster.js?v=1.10.3";
+import * as B from "./bridge.js?v=1.10.7";
+import * as C from "./combat.js?v=1.10.7";
+import { normalize, inParty } from "./rules.js?v=1.10.7";
+import * as Roster from "./roster.js?v=1.10.7";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -15,6 +15,11 @@ let self = null;
 let state = null;
 let sheets = new Map();
 let roster = { members: {} };
+// The menu writes a heartbeat while it's open (more reliable than Owlbear's
+// open/close event), so the frames can step aside.
+const menuAlive = () => { try { return Date.now() - (Number(localStorage.getItem("myrrodin-menu-alive")) || 0) < 2500; } catch { return false; } };
+let lastAlive = false;
+setInterval(() => { const a = menuAlive(); if (a !== lastAlive) { lastAlive = a; render(); } }, 500);
 let menuOpen = false; // the Myr'rodin menu already shows the party, so the frames step aside while it's open
 
 function turnOrder() {
@@ -53,7 +58,7 @@ function bar(cls, cur, max) {
   return `<span class="pf-bar ${cls}"><i style="width:${pct}%"></i><b>${cur}/${max}</b></span>`;
 }
 function partyFrames() {
-  if (!self || self.role !== "GM" || !B.partyFramesOn() || menuOpen) return "";
+  if (!self || self.role !== "GM" || !B.partyFramesOn() || menuOpen || menuAlive()) return "";
   // The saved party (works on any scene), using the live token sheet when it's on the map.
   const live = new Map([...sheets.values()].filter((s) => s.sheet?.partyId).map((s) => [s.sheet.partyId, s]));
   const fromRoster = Object.values(roster.members || {}).map((m) => {
@@ -67,6 +72,19 @@ function partyFrames() {
     .sort((a, b) => (a.c.ownerId === self.id ? -1 : b.c.ownerId === self.id ? 1 : a.c.name.localeCompare(b.c.name)));
   if (!party.length) return "";
   const turnId = state?.active ? state.currentId : null;
+  if (B.partyFramesMin()) {
+    return `<div class="hud-card pf mini">
+      <div class="hud-head"><span class="hud-sigil"></span><b>Party</b><small>${party.length}</small></div>
+      <div class="pf-row">${party.map(({ id, image, c }) => {
+        const hp = num(c.hp.current), max = num(c.hp.max);
+        const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((hp / max) * 100))) : 100;
+        const col = hp <= 0 && max > 0 ? "var(--bad, #ef6a6a)" : pct <= 25 ? "#f0a35a" : "var(--hp, #5fcf8e)";
+        return `<span class="pf-dot ${turnId === id ? "now" : ""}" title="${esc(c.name)}: ${hp}/${max} HP" style="--pct:${pct}%;--col:${col}">
+          <span class="pf-ava">${image ? `<img src="${esc(image)}" alt="" />` : esc((c.name || "?")[0])}</span>
+        </span>`;
+      }).join("")}</div>
+    </div>`;
+  }
   return `<div class="hud-card pf">
     <div class="hud-head"><span class="hud-sigil"></span><b>Party</b></div>
     <ul>${party.map(({ id, image, c }) => {

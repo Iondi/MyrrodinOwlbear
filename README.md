@@ -111,7 +111,9 @@ Player characters are saved with the **room**, not just on their token, so chang
 - Or open **Party** and click **Place party on map**: everyone who isn't on the map yet appears in the middle of the view, sheets attached.
 - The Party tab always lists the whole party, even on a map they're not on.
 
-**Party frames and the turn-order strip are GM-only** (since 1.10.2): only the GM sees them on screen. Players see the party in the Party tab and the turn order in the Combat tab. On phones there are no on-screen overlays at all, for anyone.
+**Quick sheets:** the row of portraits under the menu title opens anyone's sheet in one click (the ring shows their HP). Characters not on the current map are greyed out.
+
+**Party frames and the turn-order strip are GM-only** (since 1.10.2): only the GM sees them on screen. Players see the party in the Party tab and the turn order in the Combat tab. On phones there are no on-screen overlays at all, for anyone. The party frames sit at the bottom left and grow upward; the **▾ Minimize frames** button at the top of the Myr'rodin menu shrinks them to a row of portraits with HP rings (click again to expand).
 
 Owlbear only lets a room store a small amount of data, so saved sheets are compressed, and Google-linked characters save just their link (the sheet reloads from Google). The Party tab shows how much space the party uses.
 

@@ -481,3 +481,17 @@ html:has(body.party-page)::-webkit-scrollbar-thumb:hover { background: #d8b46a99
 .ho-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 /* Phones: let the menu scroll with a finger. */
 html:has(body.party-page) { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+
+.frames-toggle { margin-left: auto; padding: 4px 9px; font-size: 11px; border-radius: 99px; background: var(--raised); border: 1px solid var(--line-strong); color: var(--muted); cursor: pointer; }
+.frames-toggle:hover { color: var(--text); border-color: var(--gold); }
+/* Portrait row: quick access to everyone's sheet */
+.quick-sheets { display: flex; gap: 6px; overflow-x: auto; padding: 8px 12px 9px; background: var(--surface); border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.quick-sheets[hidden] { display: none; }
+.qs { flex: none; display: grid; justify-items: center; gap: 3px; width: 52px; padding: 0; background: none; border: 0; cursor: pointer; color: var(--muted); }
+.qs:disabled { cursor: default; opacity: .45; }
+.qs-ring { width: 40px; height: 40px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--col) var(--pct), rgba(255,255,255,.12) 0); display: grid; place-items: center; transition: transform .12s; }
+.qs:not(:disabled):hover .qs-ring { transform: scale(1.08); box-shadow: 0 0 0 2px var(--gold); }
+.qs-ava { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--raised); color: var(--gold); font-family: var(--display); }
+.qs-ava img { width: 100%; height: 100%; object-fit: cover; }
+.qs-name { font-size: 10.5px; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qs.mine .qs-name { color: var(--gold); font-weight: 600; }

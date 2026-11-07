@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.10.3";
+import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.10.7";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -27,6 +27,9 @@ export const setHudCorner = (c) => { try { localStorage.setItem("myrrodin-hud-co
 export const partyFramesOn = () => pref("myrrodin-party-frames", "on") !== "off";
 // Phones: no on-screen overlays at all; everything is in the Myr'rodin menu.
 export const isPhone = () => Math.min(window.screen?.width || 9999, window.screen?.height || 9999) < 600 || /Android|iPhone|iPod/i.test(navigator.userAgent);
+// Minimized party frames: just a row of portraits with HP rings.
+export const partyFramesMin = () => pref("myrrodin-party-min", "off") === "on";
+export const setPartyFramesMin = (on) => { try { localStorage.setItem("myrrodin-party-min", on ? "on" : "off"); } catch { /* ignore */ } };
 export const setPartyFramesOn = (on) => { try { localStorage.setItem("myrrodin-party-frames", on ? "on" : "off"); } catch { /* ignore */ } };
 export const partyCorner = () => pref("myrrodin-party-corner2", "bl");
 export const setPartyCorner = (c) => { try { localStorage.setItem("myrrodin-party-corner2", c); } catch { /* ignore */ } };
@@ -148,7 +151,7 @@ export function onSheetsChange(callback) {
 }
 
 export async function openSheet(itemId, extra = "") {
-  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}&v=1.3.0`);
+  const url = asset(`sheet.html?id=${encodeURIComponent(itemId)}${extra}&v=1.10.7`);
   if (!inOBR) { window.open(url, "_blank"); return; }
   await OBR.modal.open({ id: SHEET_MODAL, url, width: 920, height: 780 });
 }

@@ -5,8 +5,8 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .hud-tr { top: 14px; right: 84px; }   /* left of Owlbear's right-hand toolbar */
 .hud-tl { top: 250px; left: 14px; }  /* about two inches down, clear of the extension buttons and menu */
 .hud-br { bottom: 16px; right: 16px; }  /* under the right-hand toolbar */
-.hud-bl { bottom: 84px; left: 14px; }  /* above Owlbear's bottom-left buttons */
-.hud-bl .hud-card { max-height: calc(100vh - 170px); }
+.hud-bl { bottom: 16px; left: 14px; }  /* anchored to the bottom; grows upward */
+.hud-bl .hud-card { max-height: calc(100vh - 100px); }
 .hud-tl .hud-card { max-height: calc(100vh - 270px); }
 .hud-card {
   width: 220px; max-height: calc(100vh - 140px); overflow-y: hidden; border-radius: 12px; overflow: hidden;
@@ -55,3 +55,11 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .pf-bar.mana b, .pf-bar.psi b { display: none; }
 .pf-ac { display: grid; justify-items: center; font-weight: 800; font-size: 13px; line-height: 1; padding: 3px 5px; border-radius: 6px; background: rgba(255, 255, 255, .06); }
 .pf-ac small { font-size: 8px; color: #a596b0; letter-spacing: .08em; margin-top: 2px; }
+
+/* Minimized party frames: portraits with an HP ring */
+.pf.mini { width: auto; max-width: min(92vw, 520px); }
+.pf.mini .hud-head small { margin-left: auto; color: #a596b0; font-family: system-ui, sans-serif; }
+.pf-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 7px 9px 9px; }
+.pf-dot { width: 38px; height: 38px; border-radius: 50%; padding: 3px; background: conic-gradient(var(--col) var(--pct), rgba(255,255,255,.12) 0); display: grid; place-items: center; }
+.pf-dot .pf-ava { width: 32px; height: 32px; margin: 0; border: 0; }
+.pf-dot.now { box-shadow: 0 0 0 2px #d8b46a, 0 0 12px #d8b46a88; }

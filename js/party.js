@@ -1,12 +1,12 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.10.3";
-import { normalize, inParty } from "./rules.js?v=1.10.3";
-import { roll } from "./dice.js?v=1.10.3";
-import * as Combat from "./combat.js?v=1.10.3";
-import { mountCombat } from "./tracker.js?v=1.10.3";
-import { mountInventory } from "./inventory.js?v=1.10.3";
-import { mountHandouts } from "./handoutstab.js?v=1.10.3";
-import * as Roster from "./roster.js?v=1.10.3";
+import * as B from "./bridge.js?v=1.10.7";
+import { normalize, inParty } from "./rules.js?v=1.10.7";
+import { roll } from "./dice.js?v=1.10.7";
+import * as Combat from "./combat.js?v=1.10.7";
+import { mountCombat } from "./tracker.js?v=1.10.7";
+import { mountInventory } from "./inventory.js?v=1.10.7";
+import { mountHandouts } from "./handoutstab.js?v=1.10.7";
+import * as Roster from "./roster.js?v=1.10.7";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -47,6 +47,27 @@ function memberCard({ id, image, c, onMap, memberId }) {
   </article>`;
 }
 
+// The portrait row under the menu title: one click opens anyone's sheet.
+function renderQuickSheets(members, byParty, unsaved) {
+  const row = document.getElementById("quick-sheets");
+  if (!row) return;
+  const items = [
+    ...members.map((m) => { const live = byParty.get(m.id); return { id: live?.id || "", image: live?.image || m.token?.image?.url, c: live ? normalize(live.sheet) : Roster.sheetFor(m) }; }),
+    ...unsaved.map((s) => ({ id: s.id, image: s.image, c: normalize(s.sheet) })),
+  ].filter((x) => !x.c.gmOnly);
+  row.hidden = !items.length;
+  row.innerHTML = items.map(({ id, image, c }) => {
+    const hp = Number(c.hp.current) || 0, max = Number(c.hp.max) || 0;
+    const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((hp / max) * 100))) : 100;
+    const col = max > 0 && hp <= 0 ? "var(--bad)" : pct <= 25 ? "#f0a35a" : "var(--hp)";
+    const mine = c.ownerId && c.ownerId === self.id;
+    return `<button class="qs ${mine ? "mine" : ""}" ${id ? `data-open="${esc(id)}" title="${esc(c.name)}: open sheet (${hp}/${max} HP)"` : `disabled title="${esc(c.name)} isn't on this map"`} style="--pct:${pct}%;--col:${col}">
+      <span class="qs-ring"><span class="qs-ava">${image ? `<img src="${esc(image)}" alt="" />` : esc((c.name || "?")[0])}</span></span>
+      <span class="qs-name">${esc(String(c.name).split(/[\s(]/)[0])}</span>
+    </button>`;
+  }).join("");
+}
+
 function renderParty() {
   const isGM = self.role === "GM";
   const byParty = new Map(sheets.filter((s) => s.sheet?.partyId).map((s) => [s.sheet.partyId, s]));
@@ -61,6 +82,7 @@ function renderParty() {
   });
   // Player sheets on the map that the GM's computer hasn't saved yet.
   const unsaved = sheets.filter((s) => inParty(s.sheet) && !memberIds.has(s.sheet.partyId));
+  renderQuickSheets(members, byParty, unsaved);
   unsaved.forEach((s) => partyCards.push(memberCard({ id: s.id, image: s.image, c: normalize(s.sheet), onMap: true })));
 
   // Everyone else on this map (monsters, NPCs).
@@ -100,6 +122,8 @@ async function refresh() {
   renderParty();
 }
 
+
+document.getElementById("quick-sheets")?.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) B.openSheet(b.dataset.open); });
 
 partyEl.addEventListener("click", async (e) => {
   const open = e.target.closest("[data-open]");
@@ -196,6 +220,11 @@ function renderCombatBar() {
 combatBar.addEventListener("click", (e) => { const g = e.target.closest("[data-goto]"); if (g) showTab(g.dataset.goto); });
 
 // ---- Tabs -------------------------------------------------------------------
+// Tell the on-screen party frames the menu is open (they hide while it is).
+const beat = () => { try { localStorage.setItem("myrrodin-menu-alive", String(Date.now())); } catch { /* ignore */ } };
+beat(); setInterval(beat, 1000);
+window.addEventListener("pagehide", () => { try { localStorage.removeItem("myrrodin-menu-alive"); } catch { /* ignore */ } });
+
 const TABS = ["party", "combat", "inventory", "handouts", "dice"];
 function showTab(name) {
   if (!TABS.includes(name)) name = "party";
@@ -226,7 +255,7 @@ function renderPfSettings() {
   box.innerHTML = `<label class="chk"><input type="checkbox" id="pf-toggle" ${on ? "checked" : ""}/><span>Show party frames on my screen (GM only)</span></label>
     <div class="hud-corners" ${on ? "" : "hidden"}>${PF_CORNERS.map(([k, l]) => `<button class="chip-btn ${corner === k ? "on" : ""}" data-pf="${k}">${l}</button>`).join("")}</div>
     <p class="muted small">Everyone's HP, mana and AC, always on your screen. Only you see it; players don't. Clicks pass through it to the map. Characters show up once their sheet has an owner.</p>`;
-  box.querySelector("#pf-toggle").addEventListener("change", (e) => { B.setPartyFramesOn(e.target.checked); renderPfSettings(); });
+  box.querySelector("#pf-toggle").addEventListener("change", (e) => { B.setPartyFramesOn(e.target.checked); renderPfSettings(); window.dispatchEvent(new StorageEvent("storage", { key: "myrrodin-party-frames" })); });
   box.querySelectorAll("[data-pf]").forEach((b) => b.addEventListener("click", () => { B.setPartyCorner(b.dataset.pf); renderPfSettings(); }));
 }
 function setCombatDot(st, me) {
@@ -246,6 +275,12 @@ function setCombatDot(st, me) {
     B.OBR.action.setHeight(fit).catch(() => {});
   }
   if (self.role === "GM") renderPfSettings();
+  // GM: minimize / expand the on-screen party frames from the menu header.
+  const ft = document.getElementById("frames-toggle");
+  const paintToggle = () => { ft.hidden = self.role !== "GM" || !B.partyFramesOn(); ft.textContent = B.partyFramesMin() ? "▴ Expand frames" : "▾ Minimize frames"; };
+  ft.addEventListener("click", () => { B.setPartyFramesMin(!B.partyFramesMin()); paintToggle(); });
+  window.addEventListener("storage", (e) => { if (e.key?.startsWith("myrrodin-party")) paintToggle(); });
+  paintToggle();
   partyEl.innerHTML = `<p class="muted small" style="text-align:center">Gathering the party…</p>`;
   roster = await Roster.getRoster().catch(() => roster);
   Roster.onRosterChange((r) => { roster = r; if (self) renderParty(); });

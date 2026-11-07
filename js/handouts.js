@@ -6,7 +6,7 @@
 //
 //  Self-contained on purpose, so it could become its own extension later.
 // =====================================================================
-import { OBR, NS, inOBR, buildImage, asset } from "./bridge.js?v=1.10.3";
+import { OBR, NS, inOBR, buildImage, asset } from "./bridge.js?v=1.10.7";
 
 export const HANDOUTS_KEY = `${NS}/handouts`;
 export const SHOW_CHANNEL = `${NS}/handout-show`;
@@ -103,7 +103,7 @@ export async function showToEveryone(h) {
   await OBR.broadcast.sendMessage(SHOW_CHANNEL, h, { destination: "ALL" });
 }
 export async function viewHandout(h) {
-  const url = asset(`handout.html?u=${encodeURIComponent(h.url)}&t=${encodeURIComponent(h.title || "")}&b=${encodeURIComponent(h.by || "")}&v=1.10.3`);
+  const url = asset(`handout.html?u=${encodeURIComponent(h.url)}&t=${encodeURIComponent(h.title || "")}&b=${encodeURIComponent(h.by || "")}&v=1.10.7`);
   if (!inOBR) { window.open(url, "_blank"); return; }
   await OBR.modal.close(HANDOUT_MODAL).catch(() => {});
   await OBR.modal.open({ id: HANDOUT_MODAL, url, fullScreen: true, hideBackdrop: true, hidePaper: true });

@@ -2,12 +2,12 @@
 import {
   ABILITIES, SKILLS, TIERS, SPELL_LEVELS, HOUSE_RULES, castsToLearn,
   derive, fmt, blankCharacter, normalize, abilityMod, inParty,
-} from "./rules.js?v=1.10.3";
-import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.10.3";
-import * as B from "./bridge.js?v=1.10.3";
-import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.10.3";
-import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.10.3";
-import { enqueue as playDice } from "./diceanim.js?v=1.10.3";
+} from "./rules.js?v=1.10.7";
+import { roll, d20, plus, isDiceExpression } from "./dice.js?v=1.10.7";
+import * as B from "./bridge.js?v=1.10.7";
+import { sheetIdFromUrl, syncFromGoogle, getLibrary, splitNote } from "./gsheet.js?v=1.10.7";
+import { loadBestiary, search as searchBestiary, toCharacter, crText } from "./bestiary.js?v=1.10.7";
+import { enqueue as playDice } from "./diceanim.js?v=1.10.7";
 
 const params = new URLSearchParams(location.search);
 const itemId = params.get("id") || "preview-lyrith";
@@ -589,7 +589,7 @@ async function setCampaignParty(on) {
     delete state.partyId;
     state.noParty = true;
     commit();
-    if (pid) { const { removeMember } = await import("./roster.js?v=1.10.3"); await removeMember(pid); }
+    if (pid) { const { removeMember } = await import("./roster.js?v=1.10.7"); await removeMember(pid); }
     toast("Taken out of the campaign party.");
   }
 }
