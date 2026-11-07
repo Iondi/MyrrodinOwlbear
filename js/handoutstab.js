@@ -1,6 +1,6 @@
 // The Handouts tab of the Myr'rodin menu.
-import * as B from "./bridge.js?v=1.10.2";
-import * as H from "./handouts.js?v=1.10.2";
+import * as B from "./bridge.js?v=1.10.3";
+import * as H from "./handouts.js?v=1.10.3";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let root = null, self = null, list = [], armed = null, editing = false, testing = "";

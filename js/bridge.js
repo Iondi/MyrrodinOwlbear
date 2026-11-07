@@ -1,7 +1,7 @@
 // Talks to Owlbear Rodeo. When a page is opened outside Owlbear (for
 // testing in a normal browser tab), it falls back to "preview mode" and
 // keeps everything in this browser only.
-import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.10.2";
+import OBR, { buildImage } from "../vendor/obr-sdk.js?v=1.10.3";
 
 export const NS = "com.emberbelle.myrrodin";
 export const KEY = `${NS}/sheet`;
@@ -28,8 +28,8 @@ export const partyFramesOn = () => pref("myrrodin-party-frames", "on") !== "off"
 // Phones: no on-screen overlays at all; everything is in the Myr'rodin menu.
 export const isPhone = () => Math.min(window.screen?.width || 9999, window.screen?.height || 9999) < 600 || /Android|iPhone|iPod/i.test(navigator.userAgent);
 export const setPartyFramesOn = (on) => { try { localStorage.setItem("myrrodin-party-frames", on ? "on" : "off"); } catch { /* ignore */ } };
-export const partyCorner = () => pref("myrrodin-party-corner", "tl");
-export const setPartyCorner = (c) => { try { localStorage.setItem("myrrodin-party-corner", c); } catch { /* ignore */ } };
+export const partyCorner = () => pref("myrrodin-party-corner2", "bl");
+export const setPartyCorner = (c) => { try { localStorage.setItem("myrrodin-party-corner2", c); } catch { /* ignore */ } };
 export const menuTab = () => pref("myrrodin-menu-tab", "party");
 export const setMenuTab = (t) => { try { localStorage.setItem("myrrodin-menu-tab", t); } catch { /* ignore */ } };
 export const sheetRecentlyOpen = () => Date.now() - Number(pref("myrrodin-sheet-open", "0")) < 4000;

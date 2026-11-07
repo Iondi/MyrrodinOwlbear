@@ -5,7 +5,8 @@ html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
 .hud-tr { top: 14px; right: 84px; }   /* left of Owlbear's right-hand toolbar */
 .hud-tl { top: 250px; left: 14px; }  /* about two inches down, clear of the extension buttons and menu */
 .hud-br { bottom: 16px; right: 16px; }  /* under the right-hand toolbar */
-.hud-bl { bottom: 16px; left: 14px; }
+.hud-bl { bottom: 84px; left: 14px; }  /* above Owlbear's bottom-left buttons */
+.hud-bl .hud-card { max-height: calc(100vh - 170px); }
 .hud-tl .hud-card { max-height: calc(100vh - 270px); }
 .hud-card {
   width: 220px; max-height: calc(100vh - 140px); overflow-y: hidden; border-radius: 12px; overflow: hidden;

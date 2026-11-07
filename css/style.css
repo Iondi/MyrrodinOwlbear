@@ -479,3 +479,5 @@ html:has(body.party-page)::-webkit-scrollbar-thumb:hover { background: #d8b46a99
 .ho-body b { font-family: var(--display); font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ho-body small { color: var(--muted); font-size: 11px; }
 .ho-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+/* Phones: let the menu scroll with a finger. */
+html:has(body.party-page) { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }

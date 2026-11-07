@@ -1,12 +1,12 @@
 // The toolbar panel: party at a glance, quick HP changes for the GM, and the roll log.
-import * as B from "./bridge.js?v=1.10.2";
-import { normalize, inParty } from "./rules.js?v=1.10.2";
-import { roll } from "./dice.js?v=1.10.2";
-import * as Combat from "./combat.js?v=1.10.2";
-import { mountCombat } from "./tracker.js?v=1.10.2";
-import { mountInventory } from "./inventory.js?v=1.10.2";
-import { mountHandouts } from "./handoutstab.js?v=1.10.2";
-import * as Roster from "./roster.js?v=1.10.2";
+import * as B from "./bridge.js?v=1.10.3";
+import { normalize, inParty } from "./rules.js?v=1.10.3";
+import { roll } from "./dice.js?v=1.10.3";
+import * as Combat from "./combat.js?v=1.10.3";
+import { mountCombat } from "./tracker.js?v=1.10.3";
+import { mountInventory } from "./inventory.js?v=1.10.3";
+import { mountHandouts } from "./handoutstab.js?v=1.10.3";
+import * as Roster from "./roster.js?v=1.10.3";
 
 const partyEl = document.getElementById("party");
 const logEl = document.getElementById("log");
@@ -239,6 +239,12 @@ function setCombatDot(st, me) {
   renderLog();
   await B.whenReady();
   self = await B.me();
+  // Phones: Owlbear opens the menu at full height and cuts off the bottom, so
+  // shrink it to fit the screen; the rest scrolls.
+  if (B.inOBR && B.isPhone()) {
+    const fit = Math.max(320, Math.min(640, Math.round((window.screen?.height || 800) * 0.68)));
+    B.OBR.action.setHeight(fit).catch(() => {});
+  }
   if (self.role === "GM") renderPfSettings();
   partyEl.innerHTML = `<p class="muted small" style="text-align:center">Gathering the party…</p>`;
   roster = await Roster.getRoster().catch(() => roster);
