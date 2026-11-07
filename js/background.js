@@ -1,13 +1,13 @@
 // Runs invisibly in every player's Owlbear tab.
 // 1) Adds "Myr'rodin Sheet" to the right-click menu on character tokens.
 // 2) Shows everyone's dice rolls as notifications and keeps a roll log.
-import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, partyFramesOn, setMenuTab } from "./bridge.js?v=1.10.0";
-import { syncFromGoogle } from "./gsheet.js?v=1.10.0";
-import * as Combat from "./combat.js?v=1.10.0";
-import * as Stash from "./stash.js?v=1.10.0";
-import * as Roster from "./roster.js?v=1.10.0";
-import { normalize } from "./rules.js?v=1.10.0";
-import * as Handouts from "./handouts.js?v=1.10.0";
+import { OBR, NS, KEY, ROLL_CHANNEL, asset, appendLog, openSheet, me, listSheets, saveSheet, tokenLabel, DICE_MODAL, DICE_CHANNEL, DICE_CONTROL, diceAnimOn, sheetRecentlyOpen, HUD_MODAL, hudOn, partyFramesOn, isPhone, setMenuTab } from "./bridge.js?v=1.10.2";
+import { syncFromGoogle } from "./gsheet.js?v=1.10.2";
+import * as Combat from "./combat.js?v=1.10.2";
+import * as Stash from "./stash.js?v=1.10.2";
+import * as Roster from "./roster.js?v=1.10.2";
+import { normalize } from "./rules.js?v=1.10.2";
+import * as Handouts from "./handouts.js?v=1.10.2";
 
 const SYNC_EVERY_MS = 60 * 1000;
 const STAMP_EVERY_MS = 5 * 60 * 1000;
@@ -74,7 +74,7 @@ async function showDice(r) {
   if (dice.open) { if (dice.ready) flushDice(); return; }
   dice.open = true; dice.ready = false; dice.openedAt = Date.now();
   await OBR.modal.open({
-    id: DICE_MODAL, url: asset("dice.html?v=1.10.0"),
+    id: DICE_MODAL, url: asset("dice.html?v=1.10.2"),
     fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
   });
 }
@@ -97,11 +97,12 @@ function watchCombat(self) {
   // The on-screen frames: a click-through layer that's open while the party
   // frames are switched on, or while a fight is on.
   const syncHud = async (st) => {
-    const want = partyFramesOn() || (!!st?.active && hudOn());
+    // GM only, and never on phones: players use the Myr'rodin menu instead.
+    const want = self.role === "GM" && !isPhone() && (partyFramesOn() || (!!st?.active && hudOn()));
     if (want && !hudOpen) {
       hudOpen = true;
       await OBR.modal.open({
-        id: HUD_MODAL, url: asset("hud.html?v=1.10.0"),
+        id: HUD_MODAL, url: asset("hud.html?v=1.10.2"),
         fullScreen: true, hideBackdrop: true, hidePaper: true, disablePointerEvents: true,
       }).catch(() => { hudOpen = false; });
     } else if (!want && hudOpen) {

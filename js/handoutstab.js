@@ -1,6 +1,6 @@
 // The Handouts tab of the Myr'rodin menu.
-import * as B from "./bridge.js?v=1.10.0";
-import * as H from "./handouts.js?v=1.10.0";
+import * as B from "./bridge.js?v=1.10.2";
+import * as H from "./handouts.js?v=1.10.2";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 let root = null, self = null, list = [], armed = null, editing = false, testing = "";
@@ -31,7 +31,7 @@ function settings() {
   return `<div class="panel ho-setup">
     <div class="panel-head"><h3>Connect Discord</h3></div>
     <p class="muted small">Paste your relay's address and FEED_KEY. They're saved in this browser only, so players never see the key.</p>
-    <label class="field"><span class="field-label">Relay address</span><input id="ho-url" placeholder="https://owlbearrelay.kitty-cass.workers.dev" value="${esc(r.url)}" /></label>
+    <label class="field"><span class="field-label">Relay address</span><input id="ho-url" placeholder="https://your-relay.your-name.workers.dev" value="${esc(r.url)}" /></label>
     <label class="field"><span class="field-label">FEED_KEY</span><input id="ho-key" type="password" placeholder="your FEED_KEY" value="${esc(r.key)}" /></label>
     <div class="roll-row"><button class="primary small" data-ho="save">Connect</button>${connected ? `<button class="link small" data-ho="cancel">Cancel</button>` : ""}<span class="muted small">${esc(testing)}</span></div>
   </div>`;
@@ -76,6 +76,7 @@ async function onClick(e) {
     case "cancel": editing = false; render(); break;
     case "save": {
       const url = root.querySelector("#ho-url").value, key = root.querySelector("#ho-key").value;
+      if (!url.trim() || !key.trim()) { testing = !url.trim() ? "Type the relay address first." : "Type your FEED_KEY first."; editing = true; render(); break; }
       H.setRelay(url, key);
       editing = true; testing = "Checking…"; render();
       try { const n = await H.testRelay(); testing = ""; editing = false; B.notify(`Connected to the Discord relay (${n} handout${n === 1 ? "" : "s"} there).`, "SUCCESS"); }

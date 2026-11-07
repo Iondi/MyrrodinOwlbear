@@ -2,10 +2,10 @@
 // turn-order strip (during combat). They sit in a full-screen layer that
 // clicks pass straight through, so they never block the map or Owlbear's
 // own buttons. Each player picks the corner for each.
-import * as B from "./bridge.js?v=1.10.0";
-import * as C from "./combat.js?v=1.10.0";
-import { normalize, inParty } from "./rules.js?v=1.10.0";
-import * as Roster from "./roster.js?v=1.10.0";
+import * as B from "./bridge.js?v=1.10.2";
+import * as C from "./combat.js?v=1.10.2";
+import { normalize, inParty } from "./rules.js?v=1.10.2";
+import * as Roster from "./roster.js?v=1.10.2";
 
 const el = document.getElementById("hud");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -18,7 +18,7 @@ let roster = { members: {} };
 let menuOpen = false; // the Myr'rodin menu already shows the party, so the frames step aside while it's open
 
 function turnOrder() {
-  if (!state?.active || !self || !B.hudOn()) return "";
+  if (!state?.active || !self || self.role !== "GM" || !B.hudOn()) return "";
   const list = C.ordered(state);
   const waiting = C.waiting(state).length;
   const curIdx = list.findIndex((e) => e.id === state.currentId);
@@ -53,7 +53,7 @@ function bar(cls, cur, max) {
   return `<span class="pf-bar ${cls}"><i style="width:${pct}%"></i><b>${cur}/${max}</b></span>`;
 }
 function partyFrames() {
-  if (!self || !B.partyFramesOn() || menuOpen) return "";
+  if (!self || self.role !== "GM" || !B.partyFramesOn() || menuOpen) return "";
   // The saved party (works on any scene), using the live token sheet when it's on the map.
   const live = new Map([...sheets.values()].filter((s) => s.sheet?.partyId).map((s) => [s.sheet.partyId, s]));
   const fromRoster = Object.values(roster.members || {}).map((m) => {
